@@ -316,7 +316,7 @@ ${placemarks}
 
   return {
     initMap, setTheme, startDraw, stopDraw, effacerTout, importFile,
-    setDecollage, supprimerExclusion, genererLignesDeVol, exportWaypointsKML,
+    setZone, setDecollage, supprimerExclusion, genererLignesDeVol, exportWaypointsKML,
     toggleLayer, invalidateSize, on,
     getZone: () => zonePoints, getExclusions: () => exclusionsPolys,
     getDecollage: () => decollagePoint, getCentroid: () => zonePoints.length ? Utils.centroid(zonePoints) : null,
