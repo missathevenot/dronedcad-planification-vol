@@ -1,0 +1,21 @@
+{
+  "name": "DroneDCAD Planification Vol — Planification de missions drone",
+  "short_name": "DroneDCAD Planification Vol",
+  "description": "Planification de missions photogrammétriques DJI Matrice 350 RTK + Zenmuse P1 : calculs automatiques, cartographie des lignes de vol, tableau de missions et export de rapports.",
+  "id": "/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#0B1220",
+  "theme_color": "#0B1220",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "navigation"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

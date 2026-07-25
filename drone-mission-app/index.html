@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DroneDCAD Planification Vol — Planification de missions LiDAR/photogrammétrie drone</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DroneDCAD Planification Vol">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<link rel="stylesheet" href="libs/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-sombre">
+
+<div class="app-shell" id="appShell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand__mark">M350</div>
+      <div class="brand__text">
+        <strong>DroneDCAD Planification Vol</strong>
+        <span>Matrice 350 RTK · Zenmuse P1</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav__item is-active" data-target="panel-dashboard">
+        <span class="nav__ico">◧</span> Tableau de bord
+        <span id="navAlertBadge" class="nav__badge is-hidden">0</span>
+      </button>
+      <button class="nav__item" data-target="panel-params">
+        <span class="nav__ico">⚙</span> Zone &amp; paramètres
+      </button>
+      <button class="nav__item" data-target="panel-carto">
+        <span class="nav__ico">⌖</span> Cartographie
+      </button>
+      <button class="nav__item" data-target="panel-missions">
+        <span class="nav__ico">≣</span> Missions &amp; scénarios
+      </button>
+      <button class="nav__item" data-target="panel-export">
+        <span class="nav__ico">⭳</span> Export &amp; projet
+      </button>
+    </nav>
+
+    <div class="sidebar__foot">
+      <div class="sysline">Auteur : DCAD / SSPDDA</div>
+      <div class="sysline muted">v2.0 — usage professionnel indicatif</div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <button id="btnMenu" class="btn-icon only-mobile" aria-label="Menu">☰</button>
+      <div class="topbar__title">
+        <h1>Planification de mission photogrammétrique</h1>
+        <p>DJI Matrice 350 RTK + Zenmuse P1 — génération automatique des caractéristiques du plan de vol</p>
+      </div>
+      <div class="topbar__brand">
+        <img src="icons/dgi-logo.png" alt="Logo DGI — Direction Générale des Impôts" class="topbar__logo">
+      </div>
+      <div class="topbar__actions">
+        <button id="btnInstallPWA" class="btn btn--accent is-hidden">⭳ Installer l'application</button>
+        <button id="themeToggle" class="btn btn--ghost">☾ Mode sombre</button>
+      </div>
+    </header>
+
+    <div id="toastHost" class="toast-host"></div>
+
+    <!-- ============ PANEL: DASHBOARD ============ -->
+    <section id="panel-dashboard" class="panel is-active">
+      <div id="alertesHost" class="alertes"></div>
+
+      <div class="cards-grid">
+        <div class="card"><span class="card__label">Surface couverte</span><span class="card__value" id="cardSurface">—</span></div>
+        <div class="card"><span class="card__label">Temps de vol total</span><span class="card__value" id="cardTempsVol">—</span></div>
+        <div class="card"><span class="card__label">Batteries nécessaires</span><span class="card__value" id="cardBatteries">—</span></div>
+        <div class="card"><span class="card__label">Nombre de missions</span><span class="card__value" id="cardMissions">—</span></div>
+        <div class="card"><span class="card__label">Distance totale</span><span class="card__value" id="cardDistance">—</span></div>
+        <div class="card"><span class="card__label">Photographies</span><span class="card__value" id="cardPhotos">—</span></div>
+        <div class="card"><span class="card__label">Rendement</span><span class="card__value" id="cardRendement">—</span></div>
+        <div class="card"><span class="card__label">GSD</span><span class="card__value" id="cardGSD">—</span></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel-box">
+          <h3>Géométrie de la mission</h3>
+          <div class="kv-list" id="detailGeometrie"></div>
+        </div>
+        <div class="panel-box">
+          <h3>Produits photogrammétriques (estimation)</h3>
+          <div class="kv-list" id="detailProduits"></div>
+        </div>
+      </div>
+
+      <div class="panel-box is-hidden" id="coutBloc">
+        <h3>Estimation des coûts</h3>
+        <div class="kv-list" id="detailCouts"></div>
+      </div>
+
+      <div class="grid-3 charts-grid">
+        <div class="panel-box chart-box"><h3>Consommation des batteries</h3><canvas id="chartBatteries"></canvas></div>
+        <div class="panel-box chart-box"><h3>Répartition du temps</h3><canvas id="chartTemps"></canvas></div>
+        <div class="panel-box chart-box"><h3>Surface par mission</h3><canvas id="chartSurface"></canvas></div>
+        <div class="panel-box chart-box"><h3>Photos par mission</h3><canvas id="chartPhotos"></canvas></div>
+        <div class="panel-box chart-box"><h3>Distance par mission</h3><canvas id="chartDistance"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: PARAMS ============ -->
+    <section id="panel-params" class="panel">
+      <div class="grid-2">
+
+        <div class="panel-box">
+          <h3>Zone de la mission</h3>
+          <div class="field">
+            <label>Nom de la zone</label>
+            <input type="text" id="nomZone" placeholder="Ex : Zone cadastrale de Yopougon">
+          </div>
+          <div class="field">
+            <label>Superficie de référence (ha)</label>
+            <input type="number" id="superficieManuelle" min="0" step="0.5" value="50">
+          </div>
+          <div class="btn-row">
+            <button id="btnGenererZoneTest" class="btn btn--accent">Générer une zone carrée</button>
+            <button id="btnEffacerZone" class="btn btn--ghost">Effacer la zone</button>
+          </div>
+          <p class="hint">Ou dessinez / importez la zone réelle depuis l'onglet <b>Cartographie</b> (KML, GeoJSON, Shapefile zippé).</p>
+        </div>
+
+        <div class="panel-box">
+          <h3>Drone — DJI Matrice 350 RTK</h3>
+          <p class="hint" id="droneModele"></p>
+          <div class="field-row">
+            <div class="field"><label>Vitesse de cartographie (m/s)</label><input type="number" id="droneVitesse" step="0.5"></div>
+            <div class="field"><label>Vitesse max constructeur (m/s)</label><input type="number" id="droneVitesseMax" step="0.5"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Altitude max autorisée (m AGL)</label><input type="number" id="droneAltMax" step="1"></div>
+            <div class="field"><label>Nombre de drones simultanés</label><input type="number" id="droneNb" min="1" step="1"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Autonomie moyenne (min)</label><input type="number" id="droneAutonomie" step="1"></div>
+            <div class="field"><label>Temps de sécurité RTB (min)</label><input type="number" id="droneSecu" step="1"></div>
+          </div>
+          <div class="field">
+            <label>Temps de remplacement batterie (min)</label>
+            <input type="number" id="droneSwap" step="0.5">
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <h3>Caméra — DJI Zenmuse P1</h3>
+          <p class="hint" id="cameraModele"></p>
+          <p class="hint" id="cameraRes"></p>
+          <div class="field-row">
+            <div class="field">
+              <label>Focale utilisée (mm)</label>
+              <select id="volFocale">
+                <option value="24">24 mm</option>
+                <option value="35">35 mm</option>
+                <option value="50">50 mm</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Format de capture</label>
+              <select id="volFormat">
+                <option value="both">JPEG + RAW</option>
+                <option value="jpeg">JPEG</option>
+                <option value="raw">RAW</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <h3>Paramètres de vol</h3>
+          <div class="field-row">
+            <div class="field"><label>Altitude de vol (m AGL)</label><input type="number" id="volAltitude" step="1"></div>
+            <div class="field"><label>Vitesse de vol (m/s)</label><input type="number" id="volVitesse" step="0.5"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Recouvrement longitudinal (%)</label><input type="number" id="volRecouvLong" min="0" max="95" step="1"></div>
+            <div class="field"><label>Recouvrement latéral (%)</label><input type="number" id="volRecouvLat" min="0" max="95" step="1"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="checkbox"><input type="checkbox" id="volOrientationAuto" checked> Orientation des lignes automatique (optimisée)</label>
+            </div>
+            <div class="field">
+              <label>Orientation manuelle (°)</label>
+              <input type="number" id="volOrientation" min="0" max="179" step="1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Marge de sécurité en bout de ligne (m)</label>
+            <input type="number" id="volMarge" min="0" step="5">
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <h3>Estimation des coûts <span class="hint">(facultatif)</span></h3>
+          <div class="field-row">
+            <div class="field"><label>Coût opérateur (par heure)</label><input type="number" id="coutOperateur" min="0" step="500"></div>
+            <div class="field"><label>Coût par cycle de batterie</label><input type="number" id="coutBatterie" min="0" step="500"></div>
+          </div>
+          <div class="field">
+            <label>Coût de traitement (par ha)</label>
+            <input type="number" id="coutTraitement" min="0" step="500">
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ PANEL: CARTOGRAPHIE ============ -->
+    <section id="panel-carto" class="panel">
+      <div class="carto-layout">
+        <div class="carto-tools panel-box">
+          <h3>Outils</h3>
+          <div class="btn-col">
+            <button id="btnDessinerZone" class="btn btn--accent">✎ Dessiner la zone</button>
+            <button id="btnDessinerExclusion" class="btn btn--warn">✎ Zone d'exclusion</button>
+            <button id="btnPointDecollage" class="btn btn--ghost">📍 Point de décollage</button>
+            <label class="btn btn--ghost btn--file">
+              ⭱ Importer (KML / GeoJSON / SHP.zip)
+              <input type="file" id="fichierImport" accept=".kml,.geojson,.json,.zip" hidden>
+            </label>
+          </div>
+
+          <h3 class="mt">Calques</h3>
+          <div class="layers-list">
+            <label class="checkbox"><input type="checkbox" data-layer="zone" checked> Zone</label>
+            <label class="checkbox"><input type="checkbox" data-layer="lignes" checked> Lignes de vol</label>
+            <label class="checkbox"><input type="checkbox" data-layer="exclusions" checked> Exclusions</label>
+            <label class="checkbox"><input type="checkbox" data-layer="decollage" checked> Décollage</label>
+            <label class="checkbox"><input type="checkbox" data-layer="sensibles" checked> Zones sensibles (indicatif)</label>
+          </div>
+
+          <h3 class="mt">Zones d'exclusion</h3>
+          <ul class="exclusion-list" id="listeExclusions">
+            <li class="muted">Aucune zone d'exclusion définie.</li>
+          </ul>
+        </div>
+
+        <div class="carto-map">
+          <div id="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: MISSIONS ============ -->
+    <section id="panel-missions" class="panel">
+      <div class="panel-box">
+        <h3>Tableau des missions</h3>
+        <div class="table-wrap">
+          <table id="tableMissions" class="table">
+            <thead>
+              <tr><th>Mission</th><th>Batterie</th><th>Surface (ha)</th><th>Distance (m)</th><th>Temps (min)</th><th>Photos</th><th>Statut</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <div class="panel-box__head">
+          <h3>Comparaison de scénarios</h3>
+          <div class="btn-row">
+            <button id="btnAjouterScenario" class="btn btn--accent">+ Enregistrer le scénario courant</button>
+            <button id="btnViderScenarios" class="btn btn--ghost">Vider</button>
+          </div>
+        </div>
+        <p id="scenariosVide" class="hint">Ajustez les paramètres de vol puis enregistrez plusieurs scénarios pour les comparer ici.</p>
+        <div class="table-wrap">
+          <table id="tableScenarios" class="table">
+            <thead>
+              <tr><th>Scénario</th><th>Altitude (m)</th><th>Focale (mm)</th><th>GSD (cm/px)</th><th>Temps de vol</th><th>Batteries</th><th>Photos</th><th>Rendement (ha/h)</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: EXPORT ============ -->
+    <section id="panel-export" class="panel">
+      <div class="grid-2">
+        <div class="panel-box">
+          <h3>Export du rapport de mission</h3>
+          <div class="btn-col">
+            <button id="btnExportPDF" class="btn btn--accent">⭳ Rapport PDF complet</button>
+            <button id="btnExportExcel" class="btn btn--ghost">⭳ Export Excel (.xlsx)</button>
+            <button id="btnExportCSV" class="btn btn--ghost">⭳ Export CSV (missions)</button>
+            <button id="btnExportKML" class="btn btn--ghost">⭳ Plan de vol (.kml)</button>
+          </div>
+          <p class="hint">Le rapport PDF inclut les paramètres, les résultats détaillés, le tableau des missions, les graphiques et la carte des lignes de vol.</p>
+        </div>
+
+        <div class="panel-box">
+          <h3>Projet</h3>
+          <div class="btn-col">
+            <button id="btnSauvegarderProjet" class="btn btn--accent">💾 Sauvegarder le projet (.json)</button>
+            <label class="btn btn--ghost btn--file">
+              📂 Rouvrir un projet
+              <input type="file" id="fichierProjet" accept=".json" hidden>
+            </label>
+          </div>
+          <p class="hint">La sauvegarde conserve la zone, les exclusions, le point de décollage et tous les paramètres saisis.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="libs/leaflet.js"></script>
+<script src="libs/chart.umd.js"></script>
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jspdf.plugin.autotable.js"></script>
+<script src="libs/xlsx.full.min.js"></script>
+<script src="libs/html2canvas.min.js"></script>
+<script src="libs/shp.min.js"></script>
+<script src="utils.js"></script>
+<script src="calculs.js"></script>
+<script src="cartographie.js"></script>
+<script src="logo-dgi.js"></script>
+<script src="export.js"></script>
+<script src="app.js"></script>
+<script>
+  // --- Enregistrement du service worker (mode hors-ligne complet) ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('Service worker enregistré :', reg.scope))
+        .catch((err) => console.warn('Échec d\'enregistrement du service worker :', err));
+    });
+  }
+
+  // --- Invite d'installation PWA (Android / Chrome / Edge) ---
+  let evenementInstallDiffere = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    evenementInstallDiffere = e;
+    document.getElementById('btnInstallPWA').classList.remove('is-hidden');
+  });
+  document.getElementById('btnInstallPWA').addEventListener('click', async () => {
+    if (!evenementInstallDiffere) return;
+    evenementInstallDiffere.prompt();
+    await evenementInstallDiffere.userChoice;
+    evenementInstallDiffere = null;
+    document.getElementById('btnInstallPWA').classList.add('is-hidden');
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btnInstallPWA').classList.add('is-hidden');
+  });
+</script>
+</body>
+</html>
