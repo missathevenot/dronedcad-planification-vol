@@ -65,3 +65,10 @@ test('calculerAutonomie: reserveSecuritePct out of [0,100] raises a danger alert
   const r = Batteries.calculerAutonomie({ tempsVolGeometriqueMin: 10, surfaceHa: 5, batterie: b });
   assert.ok(r.alertes.some((a) => a.type === 'danger'));
 });
+
+test('calculerAutonomie: negative tempsDecollageMin or tempsRetourMin raises a danger alerte', () => {
+  const b = defaultBatterie();
+  b.tempsDecollageMin = -1;
+  const r = Batteries.calculerAutonomie({ tempsVolGeometriqueMin: 10, surfaceHa: 5, batterie: b });
+  assert.ok(r.alertes.some((a) => a.type === 'danger' && /négatifs/.test(a.msg)));
+});
