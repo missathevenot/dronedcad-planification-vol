@@ -106,7 +106,35 @@ const Batteries = (() => {
     };
   }
 
-  return { DEFAULTS, calculerAutonomie };
+  /** Découpe la mission globale en un plan de vol par paire de batteries (tableau des missions) */
+  function genererPlanVols(calcResultats, nbVols, nombreLignesTotal) {
+    const missions = [];
+    if (!nbVols || nbVols <= 0) return missions;
+    const lignesParVol = Math.max(1, Math.ceil(nombreLignesTotal / nbVols));
+    let ligneRestantes = nombreLignesTotal;
+    let idx = 1;
+    while (ligneRestantes > 0) {
+      const lignesIci = Math.min(lignesParVol, ligneRestantes);
+      const distance = lignesIci * calcResultats.longueurLigne
+        + Math.max(0, lignesIci - 1) * calcResultats.espacementLignes;
+      const temps = distance / (calcResultats.distanceTotale / calcResultats.tempsVolParDroneMin || 1);
+      missions.push({
+        id: idx,
+        batterie: `Batterie ${idx}`,
+        lignes: lignesIci,
+        surfaceHa: calcResultats.surfaceHa * (lignesIci / nombreLignesTotal),
+        distance,
+        tempsMin: temps,
+        photos: Math.round(calcResultats.nombrePhotos * (lignesIci / nombreLignesTotal)),
+        statut: 'Planifiée'
+      });
+      ligneRestantes -= lignesIci;
+      idx++;
+    }
+    return missions;
+  }
+
+  return { DEFAULTS, calculerAutonomie, genererPlanVols };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Batteries;

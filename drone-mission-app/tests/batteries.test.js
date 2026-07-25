@@ -72,3 +72,24 @@ test('calculerAutonomie: negative tempsDecollageMin or tempsRetourMin raises a d
   const r = Batteries.calculerAutonomie({ tempsVolGeometriqueMin: 10, surfaceHa: 5, batterie: b });
   assert.ok(r.alertes.some((a) => a.type === 'danger' && /négatifs/.test(a.msg)));
 });
+
+test('genererPlanVols: splits lines evenly across the required number of flights', () => {
+  const calcResultats = {
+    longueurLigne: 500, espacementLignes: 60, distanceTotale: 4000,
+    tempsVolParDroneMin: 20, surfaceHa: 12, nombrePhotos: 240
+  };
+  const missions = Batteries.genererPlanVols(calcResultats, 2, 4);
+  assert.equal(missions.length, 2);
+  assert.equal(missions[0].batterie, 'Batterie 1');
+  assert.equal(missions[1].batterie, 'Batterie 2');
+  assert.equal(missions[0].lignes + missions[1].lignes, 4);
+  assert.ok(Math.abs((missions[0].surfaceHa + missions[1].surfaceHa) - 12) < 1e-9);
+  assert.equal(missions[0].photos + missions[1].photos, 240);
+  assert.equal(missions[0].statut, 'Planifiée');
+});
+
+test('genererPlanVols: returns an empty array when nbVols is 0', () => {
+  const calcResultats = { longueurLigne: 500, espacementLignes: 60, distanceTotale: 4000, tempsVolParDroneMin: 20, surfaceHa: 12, nombrePhotos: 240 };
+  const missions = Batteries.genererPlanVols(calcResultats, 0, 4);
+  assert.deepEqual(missions, []);
+});
