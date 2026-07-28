@@ -191,6 +191,9 @@ const Calc = (() => {
 
     // --- Coûts (facultatif, 0 si non renseigné) ---
     const coutOperateur = (tempsVolParDroneMin / 60) * (couts.tauxHoraireOperateur || 0);
+    // TODO(Task 6): coût batterie réel à recalculer dans app.js à partir de
+    // Batteries.calculerAutonomie() (nbMissionsAutomatiques, tempsTerrainTotalMin),
+    // qui ne sont pas disponibles ici depuis la suppression du calcul batterie (Task 4).
     const coutBatteries = 0;
     const coutTraitement = surfaceHa * (couts.coutTraitementParHa || 0);
     const coutTotal = coutOperateur + coutBatteries + coutTraitement;
