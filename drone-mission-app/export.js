@@ -53,8 +53,10 @@ const Exporter = (() => {
       ['Vitesse de cartographie (m/s)', p.vol.vitesse],
       ['Altitude de vol (m AGL)', p.vol.altitude],
       ['Altitude max autorisée (m)', p.drone.altitudeMax],
-      ['Autonomie (min)', p.drone.autonomie],
-      ['Temps de sécurité (min)', p.drone.tempsSecurite],
+      ['Autonomie par paire de batteries (min)', p.batteries.autonomieParPaireMin],
+      ['Réserve de sécurité (%)', p.batteries.reserveSecuritePct],
+      ['Temps de décollage (min)', p.batteries.tempsDecollageMin],
+      ['Temps de retour (min)', p.batteries.tempsRetourMin],
       ['Nombre de drones', p.drone.nombreDrones],
       [],
       ['Paramètres caméra'],
@@ -75,8 +77,11 @@ const Exporter = (() => {
       ['Nombre de lignes de vol', r.nombreLignes],
       ['Distance totale (m)', Math.round(r.distanceTotale)],
       ['Temps de vol total (min)', +r.tempsVolMin.toFixed(1)],
-      ['Nombre de batteries', r.nbBatteriesTotal],
-      ['Nombre de missions', r.nbMissionsParDrone],
+      ['Paires de batteries', r.nbPairesMinimales],
+      ['Batteries TB65 (unités)', r.nbBatteriesTB65],
+      ['Nombre de missions', r.nbMissionsAutomatiques],
+      ['Rotations de batteries', r.nbRotations],
+      ['Décollages', r.nbDecollages],
       ['Temps total terrain (min)', +r.tempsTerrainTotalMin.toFixed(1)],
       ['Rendement (ha/h)', +r.rendementHaH.toFixed(2)],
       ['Nombre de photos', r.nombrePhotos],
@@ -181,7 +186,7 @@ const Exporter = (() => {
     ligneKV('Drone', params.drone.modele);
     ligneKV('Vitesse de cartographie', `${params.vol.vitesse} m/s`);
     ligneKV('Altitude de vol', `${params.vol.altitude} m AGL (max ${params.drone.altitudeMax} m)`);
-    ligneKV('Autonomie / sécurité', `${params.drone.autonomie} min / ${params.drone.tempsSecurite} min`);
+    ligneKV('Autonomie par paire / réserve', `${params.batteries.autonomieParPaireMin} min / ${params.batteries.reserveSecuritePct} %`);
     ligneKV('Caméra', `${params.camera.modele} — ${params.camera.largeurPx}×${params.camera.hauteurPx} px`);
     ligneKV('Focale utilisée', `${params.vol.focale} mm`);
     ligneKV('Nombre de drones simultanés', params.drone.nombreDrones);
@@ -200,8 +205,11 @@ const Exporter = (() => {
     ligneKV('Distance totale parcourue', `${Utils.fmt(resultats.distanceTotale, 0)} m`);
     ligneKV('Temps de vol total', Utils.fmtDuration(resultats.tempsVolMin));
     ligneKV('Temps total terrain (vol + changements)', Utils.fmtDuration(resultats.tempsTerrainTotalMin));
-    ligneKV('Nombre de batteries nécessaires', resultats.nbBatteriesTotal);
-    ligneKV('Nombre de missions', resultats.nbMissionsParDrone);
+    ligneKV('Paires de batteries nécessaires', resultats.nbPairesMinimales);
+    ligneKV('Batteries TB65 (unités)', resultats.nbBatteriesTB65);
+    ligneKV('Nombre de missions', resultats.nbMissionsAutomatiques);
+    ligneKV('Rotations de batteries', resultats.nbRotations);
+    ligneKV('Décollages', resultats.nbDecollages);
     ligneKV('Rendement', `${Utils.fmt(resultats.rendementHaH, 2)} ha/h`);
     ligneKV('Nombre de photographies', resultats.nombrePhotos);
     ligneKV('Volume images estimé', Utils.fmtBytes(resultats.volumeImagesMo * 1024 * 1024));
