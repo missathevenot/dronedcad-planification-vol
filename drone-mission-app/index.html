@@ -84,8 +84,10 @@
       <div class="cards-grid">
         <div class="card"><span class="card__label">Surface couverte</span><span class="card__value" id="cardSurface">—</span></div>
         <div class="card"><span class="card__label">Temps de vol total</span><span class="card__value" id="cardTempsVol">—</span></div>
-        <div class="card"><span class="card__label">Batteries nécessaires</span><span class="card__value" id="cardBatteries">—</span></div>
+        <div class="card"><span class="card__label">Paires de batteries</span><span class="card__value" id="cardBatteries">—</span></div>
         <div class="card"><span class="card__label">Nombre de missions</span><span class="card__value" id="cardMissions">—</span></div>
+        <div class="card"><span class="card__label">Rotations de batteries</span><span class="card__value" id="cardRotations">—</span></div>
+        <div class="card"><span class="card__label">Décollages</span><span class="card__value" id="cardDecollages">—</span></div>
         <div class="card"><span class="card__label">Distance totale</span><span class="card__value" id="cardDistance">—</span></div>
         <div class="card"><span class="card__label">Photographies</span><span class="card__value" id="cardPhotos">—</span></div>
         <div class="card"><span class="card__label">Rendement</span><span class="card__value" id="cardRendement">—</span></div>
@@ -150,12 +152,16 @@
             <div class="field"><label>Nombre de drones simultanés</label><input type="number" id="droneNb" min="1" step="1"></div>
           </div>
           <div class="field-row">
-            <div class="field"><label>Autonomie moyenne (min)</label><input type="number" id="droneAutonomie" step="1"></div>
-            <div class="field"><label>Temps de sécurité RTB (min)</label><input type="number" id="droneSecu" step="1"></div>
+            <div class="field"><label>Autonomie par paire de batteries (min)</label><input type="number" id="droneAutonomie" step="1" min="1"></div>
+            <div class="field"><label>Réserve de sécurité (%)</label><input type="number" id="droneSecu" step="1" min="0" max="100"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Temps de décollage (min)</label><input type="number" id="battDecollage" step="0.5" min="0"></div>
+            <div class="field"><label>Temps de retour (min)</label><input type="number" id="battRetour" step="0.5" min="0"></div>
           </div>
           <div class="field">
             <label>Temps de remplacement batterie (min)</label>
-            <input type="number" id="droneSwap" step="0.5">
+            <input type="number" id="droneSwap" step="0.5" min="0">
           </div>
         </div>
 
@@ -333,6 +339,7 @@
 <script src="libs/shp.min.js"></script>
 <script src="utils.js"></script>
 <script src="calculs.js"></script>
+<script src="batteries.js"></script>
 <script src="cartographie.js"></script>
 <script src="logo-dgi.js"></script>
 <script src="export.js"></script>
