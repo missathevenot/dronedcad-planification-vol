@@ -189,14 +189,13 @@ const Calc = (() => {
     const mnsMo = (pixelsMNS * 4) / (1024 * 1024); // float32 1 bande
     const mntMo = (pixelsMNT * 4) / (1024 * 1024);
 
-    // --- Coûts (facultatif, 0 si non renseigné) ---
-    const coutOperateur = (tempsVolParDroneMin / 60) * (couts.tauxHoraireOperateur || 0);
-    // TODO(Task 6): coût batterie réel à recalculer dans app.js à partir de
-    // Batteries.calculerAutonomie() (nbMissionsAutomatiques, tempsTerrainTotalMin),
-    // qui ne sont pas disponibles ici depuis la suppression du calcul batterie (Task 4).
-    const coutBatteries = 0;
+    // --- Coûts ---
+    // coutOperateur/coutBatteries/coutTotal dépendent de données batterie
+    // (temps terrain réel, nombre de vols) qui n'existent plus ici depuis la
+    // suppression du calcul batterie : ils sont calculés dans app.js, après
+    // fusion avec Batteries.calculerAutonomie(). Seul coutTraitement (basé sur
+    // la surface) reste purement géométrique et a sa place dans ce module.
     const coutTraitement = surfaceHa * (couts.coutTraitementParHa || 0);
-    const coutTotal = coutOperateur + coutBatteries + coutTraitement;
 
     return {
       gsd, empreinte, espacementLignes, espacementPhotos, intervalleDeclenchement,
@@ -204,7 +203,7 @@ const Calc = (() => {
       distanceTotale, photosParLigne, nombrePhotos, tempsVolMin, tempsVolParDroneMin,
       tempsPriseDeVueMin, nbDrones, tailleParPhotoMo, volumeImagesMo,
       heuresTraitement, orthophotoMo, nuagePointsMo, mnsMo, mntMo,
-      coutOperateur, coutBatteries, coutTraitement, coutTotal,
+      coutTraitement,
       surfaceHa, surfaceM2
     };
   }

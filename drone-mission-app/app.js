@@ -245,7 +245,11 @@ const App = (() => {
     const coutOperateur = (resultatsBatt.tempsTerrainTotalMin / 60) * (state.couts.tauxHoraireOperateur || 0);
     const coutBatteries = resultatsBatt.nbMissionsAutomatiques * resultatsGeo.nbDrones * (state.couts.coutCycleBatterie || 0);
     const coutTotal = coutOperateur + coutBatteries + resultatsGeo.coutTraitement;
-    const resultats = { ...resultatsGeo, ...resultatsBatt, coutOperateur, coutBatteries, coutTotal };
+    // nbPairesMinimales/nbBatteriesTB65 sortent de Batteries.calculerAutonomie() par drone ;
+    // on les remet à l'échelle de la flotte ici, comme coutBatteries ci-dessus.
+    const nbPairesMinimales = resultatsBatt.nbPairesMinimales * resultatsGeo.nbDrones;
+    const nbBatteriesTB65 = nbPairesMinimales * 2;
+    const resultats = { ...resultatsGeo, ...resultatsBatt, coutOperateur, coutBatteries, coutTotal, nbPairesMinimales, nbBatteriesTB65 };
     dernierResultats = resultats;
 
     const plan = Carto.genererLignesDeVol(angle, espacementLignes, state.vol.margeSecurite);
@@ -419,12 +423,12 @@ const App = (() => {
     charts.batteries.data.datasets[0].data = missions.map((m) => +m.tempsMin.toFixed(1));
     charts.batteries.update();
 
-    const reserveMin = state.batteries.autonomieParPaireMin * (state.batteries.reserveSecuritePct / 100);
+    const reserveMin = state.batteries.autonomieParPaireMin - r.autonomieUtileMin;
     charts.temps.data.datasets[0].data = [
-      +state.batteries.tempsDecollageMin.toFixed(1),
-      +r.tempsUtileParPaireMin.toFixed(1),
-      +state.batteries.tempsRetourMin.toFixed(1),
-      +reserveMin.toFixed(1)
+      +Math.max(0, state.batteries.tempsDecollageMin).toFixed(1),
+      +Math.max(0, r.tempsUtileParPaireMin).toFixed(1),
+      +Math.max(0, state.batteries.tempsRetourMin).toFixed(1),
+      +Math.max(0, reserveMin).toFixed(1)
     ];
     charts.temps.update();
 
