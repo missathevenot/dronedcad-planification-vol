@@ -18,10 +18,6 @@ const Calc = (() => {
       modele: 'DJI Matrice 350 RTK',
       vitesseCartographie: 15,     // m/s
       altitudeMax: 120,            // m AGL
-      autonomie: 42,               // min
-      tempsSecurite: 7,            // min (réserve RTB)
-      tempsChangementBatterie: 4,  // min
-      batterie: 'TB65 (double batterie)',
       positionnement: 'RTK',
       vitesseMax: 23,              // m/s (limite constructeur indicative)
       nombreDrones: 1
@@ -163,18 +159,9 @@ const Calc = (() => {
     const tempsVolMin = distanceTotale / vol.vitesse / 60;
     const tempsPriseDeVueMin = longueurTotaleLignes / vol.vitesse / 60;
 
-    // --- Batteries / drones ---
+    // --- Répartition entre drones (le calcul batterie est délégué à Batteries.calculerAutonomie) ---
     const nbDrones = Math.max(1, drone.nombreDrones || 1);
     const tempsVolParDroneMin = tempsVolMin / nbDrones;
-    const autonomieUtile = Math.max(1, drone.autonomie - drone.tempsSecurite);
-    const nbBatteriesParDrone = Math.max(1, Math.ceil(tempsVolParDroneMin / autonomieUtile));
-    const nbBatteriesTotal = nbBatteriesParDrone * nbDrones;
-    const nbMissionsParDrone = nbBatteriesParDrone; // 1 mission = 1 vol/batterie
-    const tempsChangementsMin = (nbBatteriesParDrone - 1) * drone.tempsChangementBatterie;
-    const tempsTerrainTotalMin = tempsVolParDroneMin + tempsChangementsMin;
-
-    const surfaceParBatterieHa = surfaceHa / nbBatteriesTotal;
-    const rendementHaH = surfaceHa / (tempsTerrainTotalMin / 60);
 
     // --- Volumétrie images ---
     let tailleParPhotoMo = 0;
@@ -203,8 +190,8 @@ const Calc = (() => {
     const mntMo = (pixelsMNT * 4) / (1024 * 1024);
 
     // --- Coûts (facultatif, 0 si non renseigné) ---
-    const coutOperateur = (tempsTerrainTotalMin / 60) * (couts.tauxHoraireOperateur || 0);
-    const coutBatteries = nbBatteriesTotal * (couts.coutCycleBatterie || 0);
+    const coutOperateur = (tempsVolParDroneMin / 60) * (couts.tauxHoraireOperateur || 0);
+    const coutBatteries = 0;
     const coutTraitement = surfaceHa * (couts.coutTraitementParHa || 0);
     const coutTotal = coutOperateur + coutBatteries + coutTraitement;
 
@@ -212,40 +199,11 @@ const Calc = (() => {
       gsd, empreinte, espacementLignes, espacementPhotos, intervalleDeclenchement,
       nombreLignes, longueurLigne, longueurTotaleLignes, distanceVirages, distanceTransit,
       distanceTotale, photosParLigne, nombrePhotos, tempsVolMin, tempsVolParDroneMin,
-      tempsPriseDeVueMin, autonomieUtile, nbBatteriesParDrone, nbBatteriesTotal,
-      nbMissionsParDrone, nbDrones, tempsChangementsMin, tempsTerrainTotalMin,
-      surfaceParBatterieHa, rendementHaH, tailleParPhotoMo, volumeImagesMo,
+      tempsPriseDeVueMin, nbDrones, tailleParPhotoMo, volumeImagesMo,
       heuresTraitement, orthophotoMo, nuagePointsMo, mnsMo, mntMo,
       coutOperateur, coutBatteries, coutTraitement, coutTotal,
       surfaceHa, surfaceM2
     };
-  }
-
-  /** Découpe la mission globale en un plan de vol par batterie (tableau des missions) */
-  function genererPlanMissions(resultats, nombreLignesTotal) {
-    const missions = [];
-    const lignesParBatterie = Math.max(1, Math.ceil(nombreLignesTotal / resultats.nbBatteriesParDrone));
-    let ligneRestantes = nombreLignesTotal;
-    let idx = 1;
-    while (ligneRestantes > 0) {
-      const lignesIci = Math.min(lignesParBatterie, ligneRestantes);
-      const distance = lignesIci * resultats.longueurLigne
-        + Math.max(0, lignesIci - 1) * resultats.espacementLignes;
-      const temps = distance / (resultats.distanceTotale / resultats.tempsVolParDroneMin || 1);
-      missions.push({
-        id: idx,
-        batterie: `Batterie ${idx}`,
-        lignes: lignesIci,
-        surfaceHa: resultats.surfaceHa * (lignesIci / nombreLignesTotal),
-        distance,
-        tempsMin: temps,
-        photos: Math.round(resultats.nombrePhotos * (lignesIci / nombreLignesTotal)),
-        statut: 'Planifiée'
-      });
-      ligneRestantes -= lignesIci;
-      idx++;
-    }
-    return missions;
   }
 
   /** Validation réglementaire / cohérence des paramètres. Retourne une liste d'alertes. */
@@ -268,17 +226,13 @@ const Calc = (() => {
     if (vol.recouvrementLat < limites.recouvrementLatMin) {
       alertes.push({ type: 'warning', msg: `Recouvrement latéral (${vol.recouvrementLat} %) inférieur au minimum recommandé (${limites.recouvrementLatMin} %).` });
     }
-    if (drone.autonomie - drone.tempsSecurite <= 0) {
-      alertes.push({ type: 'danger', msg: `Le temps de sécurité dépasse ou égale l'autonomie de la batterie : autonomie utile nulle.` });
-    }
-    if (!drone.batterie) {
-      alertes.push({ type: 'warning', msg: `Type de batterie non renseigné.` });
-    }
     return alertes;
   }
 
   return {
     DEFAULTS, calcGSD, altitudePourGSD, calcEmpreinte, bboxOriente,
-    orientationOptimale, calculerMission, genererPlanMissions, validerParametres
+    orientationOptimale, calculerMission, validerParametres
   };
 })();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = Calc;
