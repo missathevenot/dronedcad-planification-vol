@@ -13,6 +13,7 @@ const App = (() => {
     vol: { ...Calc.DEFAULTS.vol },
     couts: { ...Calc.DEFAULTS.couts },
     limites: { ...Calc.DEFAULTS.limites },
+    batteries: { ...Batteries.DEFAULTS },
     theme: 'sombre',
     superficieManuelleHa: 50,
     nomZone: ''
@@ -87,9 +88,11 @@ const App = (() => {
   const champs = [
     ['droneVitesse', 'drone.vitesseCartographie', Number],
     ['droneAltMax', 'drone.altitudeMax', Number],
-    ['droneAutonomie', 'drone.autonomie', Number],
-    ['droneSecu', 'drone.tempsSecurite', Number],
-    ['droneSwap', 'drone.tempsChangementBatterie', Number],
+    ['droneAutonomie', 'batteries.autonomieParPaireMin', Number],
+    ['droneSecu', 'batteries.reserveSecuritePct', Number],
+    ['droneSwap', 'batteries.tempsChangementBatterieMin', Number],
+    ['battDecollage', 'batteries.tempsDecollageMin', Number],
+    ['battRetour', 'batteries.tempsRetourMin', Number],
     ['droneVitesseMax', 'drone.vitesseMax', Number],
     ['droneNb', 'drone.nombreDrones', Number],
     ['volAltitude', 'vol.altitude', Number],
@@ -233,16 +236,25 @@ const App = (() => {
     const empreinteTemp = Calc.calcEmpreinte(gsdTemp, state.camera.largeurPx, state.camera.hauteurPx);
     const espacementLignes = empreinteTemp.largeur * (1 - state.vol.recouvrementLat / 100);
 
-    const resultats = Calc.calculerMission(params);
+    const resultatsGeo = Calc.calculerMission(params);
+    const resultatsBatt = Batteries.calculerAutonomie({
+      tempsVolGeometriqueMin: resultatsGeo.tempsVolParDroneMin,
+      surfaceHa: resultatsGeo.surfaceHa,
+      batterie: state.batteries
+    });
+    const coutOperateur = (resultatsBatt.tempsTerrainTotalMin / 60) * (state.couts.tauxHoraireOperateur || 0);
+    const coutBatteries = resultatsBatt.nbMissionsAutomatiques * resultatsGeo.nbDrones * (state.couts.coutCycleBatterie || 0);
+    const coutTotal = coutOperateur + coutBatteries + resultatsGeo.coutTraitement;
+    const resultats = { ...resultatsGeo, ...resultatsBatt, coutOperateur, coutBatteries, coutTotal };
     dernierResultats = resultats;
 
     const plan = Carto.genererLignesDeVol(angle, espacementLignes, state.vol.margeSecurite);
-    dernieresMissions = Calc.genererPlanMissions(resultats, resultats.nombreLignes);
+    dernieresMissions = Batteries.genererPlanVols(resultatsGeo, resultatsBatt.nbVols, resultatsGeo.nombreLignes);
 
     majDashboard(resultats);
     majTableauMissions(dernieresMissions);
     majGraphiques(resultats, dernieresMissions);
-    majValidation(params);
+    majValidation(params, resultatsBatt.alertes);
     document.getElementById('coutBloc').classList.toggle('is-hidden', resultats.coutTotal <= 0);
   }
 
@@ -252,8 +264,10 @@ const App = (() => {
   function majDashboard(r) {
     const cartes = {
       cardTempsVol: Utils.fmtDuration(r.tempsVolMin),
-      cardBatteries: r.nbBatteriesTotal,
-      cardMissions: r.nbMissionsParDrone,
+      cardBatteries: r.nbPairesMinimales,
+      cardMissions: r.nbMissionsAutomatiques,
+      cardRotations: r.nbRotations,
+      cardDecollages: r.nbDecollages,
       cardDistance: `${Utils.fmt(r.distanceTotale / 1000, 2)} km`,
       cardPhotos: Utils.fmt(r.nombrePhotos, 0),
       cardRendement: `${Utils.fmt(r.rendementHaH, 2)} ha/h`,
@@ -272,8 +286,11 @@ const App = (() => {
       <div><span>Intervalle de déclenchement</span><b>${Utils.fmt(r.intervalleDeclenchement, 2)} s</b></div>
       <div><span>Nombre de lignes</span><b>${r.nombreLignes}</b></div>
       <div><span>Longueur d'une ligne</span><b>${Utils.fmt(r.longueurLigne, 0)} m</b></div>
-      <div><span>Surface par batterie</span><b>${Utils.fmt(r.surfaceParBatterieHa, 2)} ha</b></div>
+      <div><span>Surface par vol</span><b>${Utils.fmt(r.surfaceParBatterieHa, 2)} ha</b></div>
       <div><span>Temps total terrain</span><b>${Utils.fmtDuration(r.tempsTerrainTotalMin)}</b></div>
+      <div><span>Batteries TB65 (unités)</span><b>${r.nbBatteriesTB65}</b></div>
+      <div><span>Temps utile par paire</span><b>${Utils.fmtDuration(r.tempsUtileParPaireMin)}</b></div>
+      <div><span>Autonomie restante (dernier vol)</span><b>${Utils.fmtDuration(r.autonomieRestanteMin)}</b></div>
     `;
 
     document.getElementById('detailProduits').innerHTML = `
@@ -314,8 +331,8 @@ const App = (() => {
   // ------------------------------------------------------------------
   // Validation
   // ------------------------------------------------------------------
-  function majValidation(params) {
-    const alertes = Calc.validerParametres(params);
+  function majValidation(params, alertesBatterie = []) {
+    const alertes = Calc.validerParametres(params).concat(alertesBatterie);
     const host = document.getElementById('alertesHost');
     const badge = document.getElementById('navAlertBadge');
     host.innerHTML = '';
@@ -365,8 +382,8 @@ const App = (() => {
     charts.temps = new Chart(document.getElementById('chartTemps'), {
       type: 'doughnut',
       data: {
-        labels: ['Vol', 'Changements de batterie'],
-        datasets: [{ data: [0, 0], backgroundColor: [c.accent2, c.accent] }]
+        labels: ['Décollage', 'Mission', 'Retour', 'Réserve'],
+        datasets: [{ data: [0, 0, 0, 0], backgroundColor: [c.accent3, c.accent2, c.accent, c.danger] }]
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: c.texte } } } }
     });
@@ -402,7 +419,13 @@ const App = (() => {
     charts.batteries.data.datasets[0].data = missions.map((m) => +m.tempsMin.toFixed(1));
     charts.batteries.update();
 
-    charts.temps.data.datasets[0].data = [+r.tempsVolParDroneMin.toFixed(1), +r.tempsChangementsMin.toFixed(1)];
+    const reserveMin = state.batteries.autonomieParPaireMin * (state.batteries.reserveSecuritePct / 100);
+    charts.temps.data.datasets[0].data = [
+      +state.batteries.tempsDecollageMin.toFixed(1),
+      +r.tempsUtileParPaireMin.toFixed(1),
+      +state.batteries.tempsRetourMin.toFixed(1),
+      +reserveMin.toFixed(1)
+    ];
     charts.temps.update();
 
     charts.surface.data.labels = labels;
@@ -487,7 +510,7 @@ const App = (() => {
       scenarios.push({
         nom, altitude: state.vol.altitude, focale: state.vol.focale,
         gsd: dernierResultats.gsd, temps: dernierResultats.tempsVolMin,
-        batteries: dernierResultats.nbBatteriesTotal, photos: dernierResultats.nombrePhotos,
+        batteries: dernierResultats.nbPairesMinimales, photos: dernierResultats.nombrePhotos,
         rendement: dernierResultats.rendementHaH
       });
       renderScenarios();
