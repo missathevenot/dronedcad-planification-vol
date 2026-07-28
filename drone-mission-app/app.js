@@ -242,14 +242,26 @@ const App = (() => {
       surfaceHa: resultatsGeo.surfaceHa,
       batterie: state.batteries
     });
-    const coutOperateur = (resultatsBatt.tempsTerrainTotalMin / 60) * (state.couts.tauxHoraireOperateur || 0);
-    const coutBatteries = resultatsBatt.nbMissionsAutomatiques * resultatsGeo.nbDrones * (state.couts.coutCycleBatterie || 0);
-    const coutTotal = coutOperateur + coutBatteries + resultatsGeo.coutTraitement;
-    // nbPairesMinimales/nbBatteriesTB65 sortent de Batteries.calculerAutonomie() par drone ;
-    // on les remet à l'échelle de la flotte ici, comme coutBatteries ci-dessus.
-    const nbPairesMinimales = resultatsBatt.nbPairesMinimales * resultatsGeo.nbDrones;
+    // Batteries.calculerAutonomie() raisonne "par drone" (tempsVolGeometriqueMin lui est déjà
+    // transmis divisé par nbDrones). On remet à l'échelle de la flotte complète toutes les
+    // grandeurs qui représentent un total réel de ressources/événements (batteries, rotations,
+    // décollages, missions, coût, surface par vol) avant affichage/export.
+    const nbDrones = resultatsGeo.nbDrones;
+    const nbPairesMinimales = resultatsBatt.nbPairesMinimales * nbDrones;
     const nbBatteriesTB65 = nbPairesMinimales * 2;
-    const resultats = { ...resultatsGeo, ...resultatsBatt, coutOperateur, coutBatteries, coutTotal, nbPairesMinimales, nbBatteriesTB65 };
+    const nbMissionsAutomatiques = resultatsBatt.nbMissionsAutomatiques * nbDrones;
+    const nbRotations = resultatsBatt.nbRotations * nbDrones;
+    const nbDecollages = resultatsBatt.nbDecollages * nbDrones;
+    const nbVolsFlotte = resultatsBatt.nbVols * nbDrones;
+    const surfaceParBatterieHa = nbVolsFlotte > 0 ? resultatsGeo.surfaceHa / nbVolsFlotte : 0;
+    const coutOperateur = (resultatsBatt.tempsTerrainTotalMin / 60) * (state.couts.tauxHoraireOperateur || 0);
+    const coutBatteries = nbMissionsAutomatiques * (state.couts.coutCycleBatterie || 0);
+    const coutTotal = coutOperateur + coutBatteries + resultatsGeo.coutTraitement;
+    const resultats = {
+      ...resultatsGeo, ...resultatsBatt,
+      nbPairesMinimales, nbBatteriesTB65, nbMissionsAutomatiques, nbRotations, nbDecollages,
+      surfaceParBatterieHa, coutOperateur, coutBatteries, coutTotal
+    };
     dernierResultats = resultats;
 
     const plan = Carto.genererLignesDeVol(angle, espacementLignes, state.vol.margeSecurite);

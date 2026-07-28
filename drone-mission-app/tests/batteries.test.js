@@ -93,3 +93,25 @@ test('genererPlanVols: returns an empty array when nbVols is 0', () => {
   const missions = Batteries.genererPlanVols(calcResultats, 0, 4);
   assert.deepEqual(missions, []);
 });
+
+test('genererPlanVols: uneven split (lines not evenly divisible by nbVols)', () => {
+  const calcResultats = {
+    longueurLigne: 500, espacementLignes: 60, distanceTotale: 4000,
+    tempsVolParDroneMin: 20, surfaceHa: 12, nombrePhotos: 240
+  };
+  const missions = Batteries.genererPlanVols(calcResultats, 3, 4);
+  const totalLignes = missions.reduce((sum, m) => sum + m.lignes, 0);
+  assert.equal(totalLignes, 4);
+  assert.ok(missions.length >= 1 && missions.length <= 3);
+  const totalSurface = missions.reduce((sum, m) => sum + m.surfaceHa, 0);
+  assert.ok(Math.abs(totalSurface - 12) < 1e-9);
+  const totalPhotos = missions.reduce((sum, m) => sum + m.photos, 0);
+  assert.equal(totalPhotos, 240);
+});
+
+test('calculerAutonomie: custom batterie.plages overrides the module default ranges (extensibility)', () => {
+  const b = defaultBatterie();
+  b.plages = { ...b.plages, missionPct: [90, 100] };
+  const r = Batteries.calculerAutonomie({ tempsVolGeometriqueMin: 20, surfaceHa: 10, batterie: b });
+  assert.ok(r.alertes.some((a) => a.type === 'warning' && /Répartition mission/.test(a.msg)));
+});

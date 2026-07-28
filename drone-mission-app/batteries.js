@@ -79,10 +79,11 @@ const Batteries = (() => {
     const retourPctReel = (b.tempsRetourMin / b.autonomieParPaireMin) * 100;
     const reservePctReel = b.reserveSecuritePct;
 
-    const [decMin, decMax] = DEFAULTS.plages.decollagePct;
-    const [misMin, misMax] = DEFAULTS.plages.missionPct;
-    const [retMin, retMax] = DEFAULTS.plages.retourPct;
-    const [resMin, resMax] = DEFAULTS.plages.reservePct;
+    const plages = b.plages || DEFAULTS.plages;
+    const [decMin, decMax] = plages.decollagePct;
+    const [misMin, misMax] = plages.missionPct;
+    const [retMin, retMax] = plages.retourPct;
+    const [resMin, resMax] = plages.reservePct;
 
     if (tempsUtileParPaireMin > 0 && (decollagePctReel < decMin || decollagePctReel > decMax)) {
       alertes.push({ type: 'warning', msg: `Répartition décollage (${decollagePctReel.toFixed(1)} %) hors de la plage recommandée (${decMin}-${decMax} %).` });
