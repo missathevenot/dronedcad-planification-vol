@@ -50,6 +50,9 @@
       <button class="nav__item" data-target="panel-traitement">
         <span class="nav__ico">🖥</span> Estimation des traitements
       </button>
+      <button class="nav__item" data-target="panel-meteo">
+        <span class="nav__ico">☁</span> Conditions météo
+      </button>
       <button class="nav__item" data-target="panel-export">
         <span class="nav__ico">⭳</span> Export &amp; projet
       </button>
@@ -340,6 +343,53 @@
       </div>
     </section>
 
+    <!-- ============ PANEL: METEO ============ -->
+    <section id="panel-meteo" class="panel">
+      <div class="panel-box">
+        <h3>Paramètres de la prévision</h3>
+        <div class="field-row">
+          <div class="field"><label>Date</label><input type="date" id="meteoDate"></div>
+          <div class="field"><label>Heure</label><input type="time" id="meteoHeure"></div>
+        </div>
+        <div class="field">
+          <label>Commune</label>
+          <input type="text" id="meteoCommune" placeholder="Ex : Yopougon">
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Latitude</label><input type="number" id="meteoLatitude" step="0.0001"></div>
+          <div class="field"><label>Longitude</label><input type="number" id="meteoLongitude" step="0.0001"></div>
+        </div>
+        <div class="btn-row">
+          <button id="btnMeteoRecentrer" class="btn btn--ghost">↺ Recentrer sur la zone</button>
+          <button id="btnActualiserMeteo" class="btn btn--accent">Actualiser la météo</button>
+        </div>
+      </div>
+
+      <div id="meteoVerdictHost"></div>
+
+      <div class="cards-grid">
+        <div class="card"><span class="card__label">Vent</span><span class="card__value" id="meteoCardVent">—</span></div>
+        <div class="card"><span class="card__label">Rafales</span><span class="card__value" id="meteoCardRafales">—</span></div>
+        <div class="card"><span class="card__label">Précipitations</span><span class="card__value" id="meteoCardPrecipitations">—</span></div>
+        <div class="card"><span class="card__label">Couverture nuageuse</span><span class="card__value" id="meteoCardNuages">—</span></div>
+        <div class="card"><span class="card__label">Visibilité</span><span class="card__value" id="meteoCardVisibilite">—</span></div>
+        <div class="card"><span class="card__label">Brouillard</span><span class="card__value" id="meteoCardBrouillard">—</span></div>
+        <div class="card"><span class="card__label">Humidité</span><span class="card__value" id="meteoCardHumidite">—</span></div>
+        <div class="card"><span class="card__label">Risque d'orage</span><span class="card__value" id="meteoCardOrage">—</span></div>
+      </div>
+
+      <div class="panel-box">
+        <h3>Contrôle visuel complémentaire</h3>
+        <div class="btn-row">
+          <button id="btnOuvrirVentusky" class="btn btn--ghost">Ouvrir dans Ventusky</button>
+          <button id="btnOuvrirWindy" class="btn btn--ghost">Ouvrir dans Windy</button>
+          <button id="btnOuvrirZoomEarth" class="btn btn--ghost">Ouvrir Zoom Earth</button>
+          <button id="btnOuvrirUAVForecast" class="btn btn--ghost">Ouvrir UAV Forecast</button>
+        </div>
+        <p class="hint">Zoom Earth et UAV Forecast s'ouvrent sur leur page d'accueil ; coordonnées de la mission à coller sur place : <b id="meteoCoordsAffichage">—</b></p>
+      </div>
+    </section>
+
     <!-- ============ PANEL: EXPORT ============ -->
     <section id="panel-export" class="panel">
       <div class="grid-2">
@@ -383,6 +433,7 @@
 <script src="batteries.js"></script>
 <script src="performance.js"></script>
 <script src="traitement.js"></script>
+<script src="meteo.js"></script>
 <script src="cartographie.js"></script>
 <script src="logo-dgi.js"></script>
 <script src="export.js"></script>
