@@ -57,3 +57,64 @@ test('construireLiensExternes: builds verified deep links for Ventusky/Windy and
   assert.equal(liens.zoomEarth, 'https://zoom.earth/');
   assert.equal(liens.uavForecast, 'https://www.uavforecast.com/');
 });
+
+function donneesBase(overrides = {}) {
+  return {
+    ventKmh: 15, rafalesKmh: 20, precipitationMm: 0, couvertureNuageusePct: 40,
+    visibiliteKm: 15, humiditePct: 55, codeTemps: 1, orage: false, brouillard: false,
+    ...overrides
+  };
+}
+
+test('analyserFaisabilite: fully OK conditions produce verdict autorisee with no raisons', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase());
+  assert.equal(r.verdict, 'autorisee');
+  assert.deepEqual(r.raisons, []);
+});
+
+test('analyserFaisabilite: vent boundary — 20 km/h is OK, 20.1 is alerte, 30 is alerte, 30.1 is annulation', () => {
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ ventKmh: 20 })).verdict, 'autorisee');
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ ventKmh: 20.1 })).verdict, 'deconseillee');
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ ventKmh: 30 })).verdict, 'deconseillee');
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ ventKmh: 30.1 })).verdict, 'annulee');
+});
+
+test('analyserFaisabilite: rafales boundary — 30 km/h is OK, 30.1 is alerte (no annulation tier)', () => {
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ rafalesKmh: 30 })).verdict, 'autorisee');
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ rafalesKmh: 30.1 })).verdict, 'deconseillee');
+});
+
+test('analyserFaisabilite: any precipitation triggers annulation', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ precipitationMm: 0.5 }));
+  assert.equal(r.verdict, 'annulee');
+  assert.ok(r.raisons.some((x) => /Précipitations/.test(x)));
+});
+
+test('analyserFaisabilite: thunderstorm (orage) triggers annulation', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ orage: true }));
+  assert.equal(r.verdict, 'annulee');
+  assert.ok(r.raisons.some((x) => /Orage/.test(x)));
+});
+
+test('analyserFaisabilite: visibilite boundary — 10 km is OK, 9.9 is alerte', () => {
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ visibiliteKm: 10 })).verdict, 'autorisee');
+  assert.equal(Meteo.analyserFaisabilite(donneesBase({ visibiliteKm: 9.9 })).verdict, 'deconseillee');
+});
+
+test('analyserFaisabilite: fog (brouillard) triggers annulation', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ brouillard: true }));
+  assert.equal(r.verdict, 'annulee');
+  assert.ok(r.raisons.some((x) => /Brouillard/.test(x)));
+});
+
+test('analyserFaisabilite: worst criterion wins — one annulation overrides multiple alertes', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ ventKmh: 25, rafalesKmh: 35, visibiliteKm: 8, brouillard: true }));
+  assert.equal(r.verdict, 'annulee');
+  assert.equal(r.raisons.length, 4);
+});
+
+test('analyserFaisabilite: couverture nuageuse and humidite are informational only (never affect verdict)', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ couvertureNuageusePct: 100, humiditePct: 100 }));
+  assert.equal(r.verdict, 'autorisee');
+  assert.deepEqual(r.raisons, []);
+});
