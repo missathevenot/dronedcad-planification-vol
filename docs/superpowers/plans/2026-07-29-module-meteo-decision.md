@@ -385,11 +385,11 @@ with:
 - [ ] **Step 3: Run tests to verify they pass**
 
 Run: `node --test drone-mission-app/tests/meteo.test.js`
-Expected: PASS — all 13 tests green (4 from Task 1 + 9 from Task 3).
+Expected: PASS — all 15 tests green (4 from Task 1/2 + 11 from Task 3 — a Task 3 code review added 2 tests beyond the plan's original 9, closing coverage gaps in the `criteres` shape and the "worst wins" ordering).
 
 Also re-run the full suite to confirm no cross-contamination:
 Run: `node --test drone-mission-app/tests/*.test.js`
-Expected: PASS — 41 tests total (10 batteries + 7 calculs + 4 performance + 7 traitement + 13 meteo). If the reported count differs, what matters is 0 failures.
+Expected: PASS — 43 tests total (10 batteries + 7 calculs + 4 performance + 7 traitement + 15 meteo). If the reported count differs, what matters is 0 failures.
 
 - [ ] **Step 4: Commit**
 
