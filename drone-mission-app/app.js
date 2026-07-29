@@ -368,9 +368,10 @@ const App = (() => {
       <div><span>Orthophoto</span><b>${Utils.fmtBytes(r.orthophotoMo * 1024 * 1024)}</b></div>
     `;
 
+    const margeStockagePct = Math.round((Traitement.DEFAULTS.margeStockage - 1) * 100);
     document.getElementById('detailStockage').innerHTML = `
       <div><span>Taille totale des produits</span><b>${Utils.fmtBytes(r.tailleTotaleMo * 1024 * 1024)}</b></div>
-      <div><span>Capacité minimale recommandée (+30 %)</span><b>${Utils.fmtBytes(r.stockageRecommandeMo * 1024 * 1024)}</b></div>
+      <div><span>Capacité minimale recommandée (+${margeStockagePct} %)</span><b>${Utils.fmtBytes(r.stockageRecommandeMo * 1024 * 1024)}</b></div>
     `;
   }
 
