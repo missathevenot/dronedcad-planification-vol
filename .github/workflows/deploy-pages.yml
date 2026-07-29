@@ -1,4 +1,5 @@
 # Publie drone-mission-app/ sur https://missathevenot.github.io/dronedcad-planification-vol/
+# Redéclenchement après confirmation "Source: GitHub Actions" dans Settings > Pages.
 name: Deploy drone-mission-app to GitHub Pages
 
 on:
