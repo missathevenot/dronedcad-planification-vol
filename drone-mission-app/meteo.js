@@ -59,6 +59,49 @@ const Meteo = (() => {
     };
   }
 
+  /**
+   * Applique les règles de faisabilité à des données météo déjà extraites et
+   * retourne le verdict global (le pire critère l'emporte) avec le détail par
+   * critère et la liste des raisons pour les critères non-OK.
+   */
+  function analyserFaisabilite(donnees) {
+    const s = DEFAULTS.seuils;
+    const criteres = [];
+
+    let statutVent = 'ok';
+    if (donnees.ventKmh > s.ventAnnulationKmh) statutVent = 'annulation';
+    else if (donnees.ventKmh > s.ventAlerteKmh) statutVent = 'alerte';
+    criteres.push({ nom: 'Vent', valeur: `${donnees.ventKmh} km/h`, statut: statutVent });
+
+    const statutRafales = donnees.rafalesKmh > s.rafalesAlerteKmh ? 'alerte' : 'ok';
+    criteres.push({ nom: 'Rafales', valeur: `${donnees.rafalesKmh} km/h`, statut: statutRafales });
+
+    const statutPrecipitations = donnees.precipitationMm > 0 ? 'annulation' : 'ok';
+    criteres.push({ nom: 'Précipitations', valeur: `${donnees.precipitationMm} mm`, statut: statutPrecipitations });
+
+    const statutOrage = donnees.orage ? 'annulation' : 'ok';
+    criteres.push({ nom: 'Orage', valeur: donnees.orage ? 'Présent' : 'Absent', statut: statutOrage });
+
+    const statutVisibilite = donnees.visibiliteKm < s.visibiliteAlerteKm ? 'alerte' : 'ok';
+    criteres.push({ nom: 'Visibilité', valeur: `${donnees.visibiliteKm} km`, statut: statutVisibilite });
+
+    const statutBrouillard = donnees.brouillard ? 'annulation' : 'ok';
+    criteres.push({ nom: 'Brouillard', valeur: donnees.brouillard ? 'Présent' : 'Absent', statut: statutBrouillard });
+
+    criteres.push({ nom: 'Couverture nuageuse', valeur: `${donnees.couvertureNuageusePct} %`, statut: 'ok' });
+    criteres.push({ nom: 'Humidité', valeur: `${donnees.humiditePct} %`, statut: 'ok' });
+
+    const pireStatut = criteres.some((c) => c.statut === 'annulation') ? 'annulation'
+      : criteres.some((c) => c.statut === 'alerte') ? 'alerte' : 'ok';
+    const verdict = pireStatut === 'annulation' ? 'annulee' : pireStatut === 'alerte' ? 'deconseillee' : 'autorisee';
+
+    const raisons = criteres
+      .filter((c) => c.statut !== 'ok')
+      .map((c) => `${c.nom} : ${c.valeur} (${c.statut === 'annulation' ? "seuil d'annulation dépassé" : 'hors plage recommandée'})`);
+
+    return { verdict, criteres, raisons };
+  }
+
   /** Construit les liens vers les services météo complémentaires pour une position donnée. */
   function construireLiensExternes({ latitude, longitude }) {
     const lat = Number(latitude).toFixed(4);
@@ -83,7 +126,7 @@ const Meteo = (() => {
   }
 
   return {
-    DEFAULTS, construireUrlOpenMeteo, extraireDonneesHeure,
+    DEFAULTS, construireUrlOpenMeteo, extraireDonneesHeure, analyserFaisabilite,
     construireLiensExternes, recupererMeteo
   };
 })();
