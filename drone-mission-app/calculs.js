@@ -1,9 +1,10 @@
 /**
  * calculs.js
- * Moteur de calcul de mission photogrammétrique pour DJI Matrice 350 RTK + Zenmuse P1.
- * Toutes les formules sont documentées ; les estimations de volumétrie (nuage de points,
- * MNT/MNS, temps de traitement) sont des ordres de grandeur indicatifs, à valider selon
- * la chaîne de traitement retenue (DJI Terra, Pix4D, Agisoft Metashape...).
+ * Moteur de calcul de la géométrie de vol pour DJI Matrice 350 RTK + Zenmuse P1
+ * (GSD, lignes de vol, espacements, nombre de photos, temps de vol). Toutes les
+ * formules sont documentées. Les estimations de volumétrie des produits
+ * photogrammétriques (nuage de points, MNS/MNT, temps de traitement) vivent
+ * désormais dans traitement.js.
  */
 
 'use strict';
