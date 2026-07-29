@@ -14,6 +14,7 @@ const App = (() => {
     couts: { ...Calc.DEFAULTS.couts },
     limites: { ...Calc.DEFAULTS.limites },
     batteries: { ...Batteries.DEFAULTS },
+    performance: { ...Performance.DEFAULTS },
     theme: 'sombre',
     superficieManuelleHa: 50,
     nomZone: ''
@@ -107,6 +108,7 @@ const App = (() => {
     ['coutOperateur', 'couts.tauxHoraireOperateur', Number],
     ['coutBatterie', 'couts.coutCycleBatterie', Number],
     ['coutTraitement', 'couts.coutTraitementParHa', Number],
+    ['pcType', 'performance.typeSelectionne', String],
     ['superficieManuelle', 'superficieManuelleHa', Number],
     ['nomZone', 'nomZone', String]
   ];
@@ -133,12 +135,20 @@ const App = (() => {
         if (path === 'vol.orientationAuto') {
           document.getElementById('volOrientation').closest('.field').classList.toggle('is-hidden', v);
         }
+        if (path === 'performance.typeSelectionne') {
+          majPCTypeHint();
+        }
         recalculer();
       }, 200));
     });
 
     document.getElementById('btnGenererZoneTest').addEventListener('click', genererZoneTest);
     document.getElementById('btnEffacerZone').addEventListener('click', () => Carto.effacerTout());
+  }
+
+  function majPCTypeHint() {
+    const type = state.performance.types[state.performance.typeSelectionne];
+    document.getElementById('pcTypeConfig').textContent = type ? type.config : '';
   }
 
   function remplirFormulaireDepuisEtat() {
@@ -152,6 +162,7 @@ const App = (() => {
     document.getElementById('droneModele').textContent = state.drone.modele;
     document.getElementById('cameraModele').textContent = state.camera.modele;
     document.getElementById('cameraRes').textContent = `${state.camera.largeurPx} × ${state.camera.hauteurPx} px (${state.camera.megapixels} MP)`;
+    majPCTypeHint();
   }
 
   function genererZoneTest() {
@@ -254,13 +265,25 @@ const App = (() => {
     const nbDecollages = resultatsBatt.nbDecollages * nbDrones;
     const nbVolsFlotte = resultatsBatt.nbVols * nbDrones;
     const surfaceParBatterieHa = nbVolsFlotte > 0 ? resultatsGeo.surfaceHa / nbVolsFlotte : 0;
+    const coefficientPC = Performance.coefficientDe(state.performance.types, state.performance.typeSelectionne);
+    const empreintePx = state.camera.largeurPx * state.camera.hauteurPx;
+    const resultatsTraitement = Traitement.calculerTraitement({
+      nombrePhotos: resultatsGeo.nombrePhotos,
+      empreintePx,
+      surfaceM2: resultatsGeo.surfaceM2,
+      gsd: resultatsGeo.gsd,
+      formatCapture: state.vol.formatCapture,
+      limites: state.limites,
+      coefficientPC
+    });
+
     const coutOperateur = (resultatsBatt.tempsTerrainTotalMin / 60) * (state.couts.tauxHoraireOperateur || 0);
     const coutBatteries = nbMissionsAutomatiques * (state.couts.coutCycleBatterie || 0);
     const coutTotal = coutOperateur + coutBatteries + resultatsGeo.coutTraitement;
     const resultats = {
-      ...resultatsGeo, ...resultatsBatt,
+      ...resultatsGeo, ...resultatsBatt, ...resultatsTraitement,
       nbPairesMinimales, nbBatteriesTB65, nbMissionsAutomatiques, nbRotations, nbDecollages,
-      surfaceParBatterieHa, coutOperateur, coutBatteries, coutTotal
+      surfaceParBatterieHa, coutOperateur, coutBatteries, coutTotal, coefficientPC
     };
     dernierResultats = resultats;
 
@@ -268,6 +291,7 @@ const App = (() => {
     dernieresMissions = Batteries.genererPlanVols(resultatsGeo, resultatsBatt.nbVols, resultatsGeo.nombreLignes);
 
     majDashboard(resultats);
+    majTraitement(resultats);
     majTableauMissions(dernieresMissions);
     majGraphiques(resultats, dernieresMissions);
     majValidation(params, resultatsBatt.alertes);
@@ -309,15 +333,6 @@ const App = (() => {
       <div><span>Autonomie restante (dernier vol)</span><b>${Utils.fmtDuration(r.autonomieRestanteMin)}</b></div>
     `;
 
-    document.getElementById('detailProduits').innerHTML = `
-      <div><span>Volume images</span><b>${Utils.fmtBytes(r.volumeImagesMo * 1024 * 1024)}</b></div>
-      <div><span>Temps de traitement estimé</span><b>${Utils.fmt(r.heuresTraitement, 1)} h</b></div>
-      <div><span>Orthophoto estimée</span><b>${Utils.fmtBytes(r.orthophotoMo * 1024 * 1024)}</b></div>
-      <div><span>Nuage de points estimé</span><b>${Utils.fmtBytes(r.nuagePointsMo * 1024 * 1024)}</b></div>
-      <div><span>MNS estimé</span><b>${Utils.fmtBytes(r.mnsMo * 1024 * 1024)}</b></div>
-      <div><span>MNT estimé</span><b>${Utils.fmtBytes(r.mntMo * 1024 * 1024)}</b></div>
-    `;
-
     if (r.coutTotal > 0) {
       document.getElementById('detailCouts').innerHTML = `
         <div><span>Opérateur</span><b>${Utils.fmt(r.coutOperateur, 0)}</b></div>
@@ -326,6 +341,37 @@ const App = (() => {
         <div><span>Total</span><b>${Utils.fmt(r.coutTotal, 0)}</b></div>
       `;
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Estimation des traitements
+  // ------------------------------------------------------------------
+  function majTraitement(r) {
+    const cartesTraitement = {
+      cardTempsAlignement: `${Utils.fmt(r.tempsAlignementH, 2)} h`,
+      cardTempsNuage: `${Utils.fmt(r.tempsNuageH, 2)} h`,
+      cardTempsMNS: `${Utils.fmt(r.tempsMNSH, 2)} h`,
+      cardTempsMNT: `${Utils.fmt(r.tempsMNTH, 2)} h`,
+      cardTempsOrtho: `${Utils.fmt(r.tempsOrthophotoH, 2)} h`,
+      cardTempsTotal: `${Utils.fmt(r.tempsTotalH, 2)} h`
+    };
+    Object.entries(cartesTraitement).forEach(([id, v]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    });
+
+    document.getElementById('detailTaillesProduits').innerHTML = `
+      <div><span>Images brutes</span><b>${Utils.fmtBytes(r.volumeImagesMo * 1024 * 1024)}</b></div>
+      <div><span>Nuage de points</span><b>${Utils.fmtBytes(r.nuagePointsMo * 1024 * 1024)}</b></div>
+      <div><span>MNS</span><b>${Utils.fmtBytes(r.mnsMo * 1024 * 1024)}</b></div>
+      <div><span>MNT</span><b>${Utils.fmtBytes(r.mntMo * 1024 * 1024)}</b></div>
+      <div><span>Orthophoto</span><b>${Utils.fmtBytes(r.orthophotoMo * 1024 * 1024)}</b></div>
+    `;
+
+    document.getElementById('detailStockage').innerHTML = `
+      <div><span>Taille totale des produits</span><b>${Utils.fmtBytes(r.tailleTotaleMo * 1024 * 1024)}</b></div>
+      <div><span>Capacité minimale recommandée (+30 %)</span><b>${Utils.fmtBytes(r.stockageRecommandeMo * 1024 * 1024)}</b></div>
+    `;
   }
 
   function majTableauMissions(missions) {
@@ -418,6 +464,23 @@ const App = (() => {
       data: { labels: [], datasets: [{ label: 'Distance parcourue par mission (m)', data: [], backgroundColor: c.accent2 }] },
       options: communs
     });
+
+    charts.traitementTemps = new Chart(document.getElementById('chartTraitementTemps'), {
+      type: 'bar',
+      data: {
+        labels: ['Alignement', 'Nuage', 'MNS', 'MNT', 'Orthophoto'],
+        datasets: [{ label: 'Temps (h)', data: [0, 0, 0, 0, 0], backgroundColor: c.accent3 }]
+      },
+      options: communs
+    });
+    charts.traitementTailles = new Chart(document.getElementById('chartTraitementTailles'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Images brutes', 'Nuage de points', 'MNS', 'MNT', 'Orthophoto'],
+        datasets: [{ data: [0, 0, 0, 0, 0], backgroundColor: [c.accent, c.accent2, c.accent3, c.succes, c.danger] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: c.texte } } } }
+    });
   }
 
   function majCouleursChart(chart) {
@@ -455,6 +518,18 @@ const App = (() => {
     charts.distance.data.labels = labels;
     charts.distance.data.datasets[0].data = missions.map((m) => Math.round(m.distance));
     charts.distance.update();
+
+    charts.traitementTemps.data.datasets[0].data = [
+      +r.tempsAlignementH.toFixed(2), +r.tempsNuageH.toFixed(2), +r.tempsMNSH.toFixed(2),
+      +r.tempsMNTH.toFixed(2), +r.tempsOrthophotoH.toFixed(2)
+    ];
+    charts.traitementTemps.update();
+
+    charts.traitementTailles.data.datasets[0].data = [
+      +r.volumeImagesMo.toFixed(1), +r.nuagePointsMo.toFixed(1), +r.mnsMo.toFixed(1),
+      +r.mntMo.toFixed(1), +r.orthophotoMo.toFixed(1)
+    ];
+    charts.traitementTailles.update();
   }
 
   // ------------------------------------------------------------------
@@ -475,7 +550,9 @@ const App = (() => {
         'Temps de vol par batterie': charts.batteries.canvas,
         'Répartition du temps': charts.temps.canvas,
         'Surface par mission': charts.surface.canvas,
-        'Photos par mission': charts.photos.canvas
+        'Photos par mission': charts.photos.canvas,
+        'Temps par étape de traitement': charts.traitementTemps.canvas,
+        'Répartition des tailles des produits': charts.traitementTailles.canvas
       };
       Exporter.exportPDF(dernieresMissions, dernierResultats, state, canvases);
     });
