@@ -22,11 +22,18 @@ const Meteo = (() => {
     codesBrouillard: [45, 48]       // codes météo WMO
   };
 
-  /** Construit l'URL de la requête Open-Meteo pour une position et une date. */
+  /**
+   * Construit l'URL de la requête Open-Meteo pour une position et une date.
+   * `timezone=auto` fait renvoyer les horodatages horaires dans le fuseau
+   * local de la position demandée (résolu par Open-Meteo à partir des
+   * coordonnées) plutôt qu'en UTC — sans ce paramètre, `hourly.time` serait
+   * en UTC alors que `heure` (saisie utilisateur) est une heure locale, ce
+   * qui ferait correspondre silencieusement la mauvaise heure sans erreur.
+   */
   function construireUrlOpenMeteo({ latitude, longitude, date }) {
     return `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
       `&hourly=wind_speed_10m,wind_gusts_10m,precipitation,cloud_cover,visibility,relative_humidity_2m,weather_code` +
-      `&start_date=${date}&end_date=${date}&wind_speed_unit=kmh`;
+      `&start_date=${date}&end_date=${date}&wind_speed_unit=kmh&timezone=auto`;
   }
 
   /** Extrait et convertit les données de l'heure demandée depuis une réponse Open-Meteo. */

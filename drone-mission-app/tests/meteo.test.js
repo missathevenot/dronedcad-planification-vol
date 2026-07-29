@@ -10,7 +10,7 @@ test('construireUrlOpenMeteo: builds the exact expected Open-Meteo forecast URL'
     url,
     'https://api.open-meteo.com/v1/forecast?latitude=5.3364&longitude=-4.0267' +
     '&hourly=wind_speed_10m,wind_gusts_10m,precipitation,cloud_cover,visibility,relative_humidity_2m,weather_code' +
-    '&start_date=2026-08-01&end_date=2026-08-01&wind_speed_unit=kmh'
+    '&start_date=2026-08-01&end_date=2026-08-01&wind_speed_unit=kmh&timezone=auto'
   );
 });
 
