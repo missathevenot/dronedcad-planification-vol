@@ -58,6 +58,8 @@ const Exporter = (() => {
       ['Temps de décollage (min)', p.batteries.tempsDecollageMin],
       ['Temps de retour (min)', p.batteries.tempsRetourMin],
       ['Nombre de drones', p.drone.nombreDrones],
+      ['Ordinateur de traitement', p.performance.types[p.performance.typeSelectionne].nom],
+      ['Coefficient de performance', r.coefficientPC],
       [],
       ['Paramètres caméra'],
       ['Modèle', p.camera.modele],
@@ -86,11 +88,17 @@ const Exporter = (() => {
       ['Rendement (ha/h)', +r.rendementHaH.toFixed(2)],
       ['Nombre de photos', r.nombrePhotos],
       ['Volume images', Utils.fmtBytes(r.volumeImagesMo * 1024 * 1024)],
-      ['Temps de traitement estimé (h)', +r.heuresTraitement.toFixed(1)],
+      ['Temps alignement estimé (h)', +r.tempsAlignementH.toFixed(2)],
+      ['Temps nuage de points estimé (h)', +r.tempsNuageH.toFixed(2)],
+      ['Temps MNS estimé (h)', +r.tempsMNSH.toFixed(2)],
+      ['Temps MNT estimé (h)', +r.tempsMNTH.toFixed(2)],
+      ['Temps orthophoto estimé (h)', +r.tempsOrthophotoH.toFixed(2)],
+      ['Temps total de traitement estimé (h)', +r.tempsTotalH.toFixed(2)],
       ['Taille orthophoto estimée', Utils.fmtBytes(r.orthophotoMo * 1024 * 1024)],
       ['Taille nuage de points estimée', Utils.fmtBytes(r.nuagePointsMo * 1024 * 1024)],
       ['Taille MNS estimée', Utils.fmtBytes(r.mnsMo * 1024 * 1024)],
       ['Taille MNT estimée', Utils.fmtBytes(r.mntMo * 1024 * 1024)],
+      ['Capacité de stockage recommandée', Utils.fmtBytes(r.stockageRecommandeMo * 1024 * 1024)],
       ['Coût total estimé', +r.coutTotal.toFixed(0)]
     ];
   }
@@ -190,6 +198,7 @@ const Exporter = (() => {
     ligneKV('Caméra', `${params.camera.modele} — ${params.camera.largeurPx}×${params.camera.hauteurPx} px`);
     ligneKV('Focale utilisée', `${params.vol.focale} mm`);
     ligneKV('Nombre de drones simultanés', params.drone.nombreDrones);
+    ligneKV('Ordinateur de traitement', `${params.performance.types[params.performance.typeSelectionne].nom} (coefficient ${resultats.coefficientPC})`);
     y += 6;
 
     section('Paramètres de vol');
@@ -215,12 +224,18 @@ const Exporter = (() => {
     ligneKV('Volume images estimé', Utils.fmtBytes(resultats.volumeImagesMo * 1024 * 1024));
     y += 6;
 
-    section('Estimation des produits photogrammétriques');
-    ligneKV('Temps de traitement estimé', `${Utils.fmt(resultats.heuresTraitement, 1)} h`);
+    section('Estimation des traitements photogrammétriques');
+    ligneKV('Temps alignement', `${Utils.fmt(resultats.tempsAlignementH, 2)} h`);
+    ligneKV('Temps nuage de points', `${Utils.fmt(resultats.tempsNuageH, 2)} h`);
+    ligneKV('Temps MNS', `${Utils.fmt(resultats.tempsMNSH, 2)} h`);
+    ligneKV('Temps MNT', `${Utils.fmt(resultats.tempsMNTH, 2)} h`);
+    ligneKV('Temps orthophoto', `${Utils.fmt(resultats.tempsOrthophotoH, 2)} h`);
+    ligneKV('Temps total de traitement', `${Utils.fmt(resultats.tempsTotalH, 2)} h`);
     ligneKV('Taille orthophoto estimée', Utils.fmtBytes(resultats.orthophotoMo * 1024 * 1024));
     ligneKV('Taille nuage de points estimée', Utils.fmtBytes(resultats.nuagePointsMo * 1024 * 1024));
     ligneKV('Taille MNS estimée', Utils.fmtBytes(resultats.mnsMo * 1024 * 1024));
     ligneKV('Taille MNT estimée', Utils.fmtBytes(resultats.mntMo * 1024 * 1024));
+    ligneKV('Capacité de stockage recommandée', Utils.fmtBytes(resultats.stockageRecommandeMo * 1024 * 1024));
     if (resultats.coutTotal > 0) ligneKV('Coût total estimé', Utils.fmt(resultats.coutTotal, 0));
     y += 10;
 
