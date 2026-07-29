@@ -19,15 +19,24 @@ function baseParams(overrides = {}) {
   };
 }
 
-test('calculerMission still computes geometry and photogrammetric product fields', () => {
+test('calculerMission still computes flight geometry fields', () => {
   const r = Calc.calculerMission(baseParams());
   assert.ok(r.gsd > 0);
   assert.ok(r.nombreLignes >= 1);
   assert.ok(r.tempsVolMin > 0);
-  assert.ok(r.orthophotoMo > 0);
-  assert.ok(r.nuagePointsMo > 0);
-  assert.ok(r.mnsMo > 0);
-  assert.ok(r.mntMo > 0);
+  assert.ok(r.nombrePhotos > 0);
+  assert.ok(r.surfaceM2 > 0);
+});
+
+test('calculerMission no longer returns volumetry/processing fields (moved to Traitement)', () => {
+  const r = Calc.calculerMission(baseParams());
+  assert.equal(r.tailleParPhotoMo, undefined);
+  assert.equal(r.volumeImagesMo, undefined);
+  assert.equal(r.heuresTraitement, undefined);
+  assert.equal(r.orthophotoMo, undefined);
+  assert.equal(r.nuagePointsMo, undefined);
+  assert.equal(r.mnsMo, undefined);
+  assert.equal(r.mntMo, undefined);
 });
 
 test('calculerMission no longer returns battery-derived fields (moved to Batteries)', () => {

@@ -127,7 +127,7 @@ const Calc = (() => {
    * @param {Object} p - paramètres { surfaceM2, drone, camera, vol, couts, geometrie }
    */
   function calculerMission(p) {
-    const { drone, camera, vol, couts, limites } = p;
+    const { drone, camera, vol, couts } = p;
     const surfaceM2 = p.surfaceM2;
     const surfaceHa = Utils.m2ToHa(surfaceM2);
 
@@ -163,32 +163,6 @@ const Calc = (() => {
     const nbDrones = Math.max(1, drone.nombreDrones || 1);
     const tempsVolParDroneMin = tempsVolMin / nbDrones;
 
-    // --- Volumétrie images ---
-    let tailleParPhotoMo = 0;
-    if (vol.formatCapture === 'raw') tailleParPhotoMo = limites.tailleImageRawMo;
-    else if (vol.formatCapture === 'jpeg') tailleParPhotoMo = limites.tailleImageJpegMo;
-    else tailleParPhotoMo = limites.tailleImageRawMo + limites.tailleImageJpegMo;
-    const volumeImagesMo = nombrePhotos * tailleParPhotoMo;
-
-    // --- Produits photogrammétriques (estimations) ---
-    const empreintePx = camera.largeurPx * camera.hauteurPx;
-    const heuresTraitement = (nombrePhotos * empreintePx) / 4.2e9; // heuristique ~4.2 Gpx traités / h (poste performant)
-
-    const gsdM = gsd / 100;
-    const pixelsOrtho = surfaceM2 / (gsdM * gsdM);
-    const orthophotoMo = (pixelsOrtho * 1.5) / (1024 * 1024); // ~1.5 octet/px compressé (JPEG/LZW, 3 bandes)
-
-    const densiteNuage = 4; // points par empreinte pixel GSD (dense cloud typique)
-    const nbPointsNuage = pixelsOrtho * densiteNuage;
-    const nuagePointsMo = (nbPointsNuage * 18) / (1024 * 1024); // ~18 octets/point (xyz + rgb + normales compressés)
-
-    const gsdMNS = gsdM; // MNS ~ résolution native
-    const gsdMNT = gsdM * 4; // MNT généralement rééchantillonné plus grossier
-    const pixelsMNS = surfaceM2 / (gsdMNS * gsdMNS);
-    const pixelsMNT = surfaceM2 / (gsdMNT * gsdMNT);
-    const mnsMo = (pixelsMNS * 4) / (1024 * 1024); // float32 1 bande
-    const mntMo = (pixelsMNT * 4) / (1024 * 1024);
-
     // --- Coûts ---
     // coutOperateur/coutBatteries/coutTotal dépendent de données batterie
     // (temps terrain réel, nombre de vols) qui n'existent plus ici depuis la
@@ -201,8 +175,7 @@ const Calc = (() => {
       gsd, empreinte, espacementLignes, espacementPhotos, intervalleDeclenchement,
       nombreLignes, longueurLigne, longueurTotaleLignes, distanceVirages, distanceTransit,
       distanceTotale, photosParLigne, nombrePhotos, tempsVolMin, tempsVolParDroneMin,
-      tempsPriseDeVueMin, nbDrones, tailleParPhotoMo, volumeImagesMo,
-      heuresTraitement, orthophotoMo, nuagePointsMo, mnsMo, mntMo,
+      tempsPriseDeVueMin, nbDrones,
       coutTraitement,
       surfaceHa, surfaceM2
     };
