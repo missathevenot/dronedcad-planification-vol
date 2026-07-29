@@ -44,6 +44,7 @@ const Exporter = (() => {
   }
 
   function resumeVersLignes(r, p) {
+    const pcType = p.performance.types[p.performance.typeSelectionne] || p.performance.types.portable;
     return [
       ['Rapport de mission — Planification photogrammétrique drone'],
       ['Généré le', Utils.now()],
@@ -58,7 +59,7 @@ const Exporter = (() => {
       ['Temps de décollage (min)', p.batteries.tempsDecollageMin],
       ['Temps de retour (min)', p.batteries.tempsRetourMin],
       ['Nombre de drones', p.drone.nombreDrones],
-      ['Ordinateur de traitement', p.performance.types[p.performance.typeSelectionne].nom],
+      ['Ordinateur de traitement', pcType.nom],
       ['Coefficient de performance', r.coefficientPC],
       [],
       ['Paramètres caméra'],
@@ -198,7 +199,8 @@ const Exporter = (() => {
     ligneKV('Caméra', `${params.camera.modele} — ${params.camera.largeurPx}×${params.camera.hauteurPx} px`);
     ligneKV('Focale utilisée', `${params.vol.focale} mm`);
     ligneKV('Nombre de drones simultanés', params.drone.nombreDrones);
-    ligneKV('Ordinateur de traitement', `${params.performance.types[params.performance.typeSelectionne].nom} (coefficient ${resultats.coefficientPC})`);
+    const pcType = params.performance.types[params.performance.typeSelectionne] || params.performance.types.portable;
+    ligneKV('Ordinateur de traitement', `${pcType.nom} (coefficient ${resultats.coefficientPC})`);
     y += 6;
 
     section('Paramètres de vol');
