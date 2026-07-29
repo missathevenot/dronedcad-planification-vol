@@ -113,8 +113,31 @@ test('analyserFaisabilite: worst criterion wins — one annulation overrides mul
   assert.equal(r.raisons.length, 4);
 });
 
+test('analyserFaisabilite: worst criterion wins even when the annulation-tier criterion is evaluated before a trailing alerte', () => {
+  // precipitationMm (annulation) is evaluated before visibiliteKm (alerte) in the natural
+  // field order — this guards against a buggy "last non-ok criterion wins" implementation
+  // that the previous test alone couldn't distinguish from genuine worst-wins logic.
+  const r = Meteo.analyserFaisabilite(donneesBase({ precipitationMm: 0.5, visibiliteKm: 8 }));
+  assert.equal(r.verdict, 'annulee');
+  assert.equal(r.raisons.length, 2);
+});
+
 test('analyserFaisabilite: couverture nuageuse and humidite are informational only (never affect verdict)', () => {
   const r = Meteo.analyserFaisabilite(donneesBase({ couvertureNuageusePct: 100, humiditePct: 100 }));
   assert.equal(r.verdict, 'autorisee');
   assert.deepEqual(r.raisons, []);
+});
+
+test('analyserFaisabilite: criteres includes all 8 criteria with the expected statut, including the informational ones', () => {
+  const r = Meteo.analyserFaisabilite(donneesBase({ ventKmh: 25, couvertureNuageusePct: 80, humiditePct: 90 }));
+  const parStatutNom = Object.fromEntries(r.criteres.map((c) => [c.nom, c.statut]));
+  assert.equal(Object.keys(parStatutNom).length, 8);
+  assert.equal(parStatutNom['Vent'], 'alerte');
+  assert.equal(parStatutNom['Rafales'], 'ok');
+  assert.equal(parStatutNom['Précipitations'], 'ok');
+  assert.equal(parStatutNom['Orage'], 'ok');
+  assert.equal(parStatutNom['Visibilité'], 'ok');
+  assert.equal(parStatutNom['Brouillard'], 'ok');
+  assert.equal(parStatutNom['Couverture nuageuse'], 'ok');
+  assert.equal(parStatutNom['Humidité'], 'ok');
 });
