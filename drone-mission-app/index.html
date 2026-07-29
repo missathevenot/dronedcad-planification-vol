@@ -47,6 +47,9 @@
       <button class="nav__item" data-target="panel-missions">
         <span class="nav__ico">≣</span> Missions &amp; scénarios
       </button>
+      <button class="nav__item" data-target="panel-traitement">
+        <span class="nav__ico">🖥</span> Estimation des traitements
+      </button>
       <button class="nav__item" data-target="panel-export">
         <span class="nav__ico">⭳</span> Export &amp; projet
       </button>
@@ -98,10 +101,6 @@
         <div class="panel-box">
           <h3>Géométrie de la mission</h3>
           <div class="kv-list" id="detailGeometrie"></div>
-        </div>
-        <div class="panel-box">
-          <h3>Produits photogrammétriques (estimation)</h3>
-          <div class="kv-list" id="detailProduits"></div>
         </div>
       </div>
 
@@ -226,6 +225,20 @@
           </div>
         </div>
 
+        <div class="panel-box">
+          <h3>Configuration de l'ordinateur de traitement</h3>
+          <div class="field">
+            <label>Type d'ordinateur</label>
+            <select id="pcType">
+              <option value="portable">Ordinateur portable (coefficient 1.00)</option>
+              <option value="bureau">Ordinateur de bureau (coefficient 0.65)</option>
+              <option value="station">Station de travail (coefficient 0.35)</option>
+              <option value="serveur">Serveur de calcul (coefficient 0.20)</option>
+            </select>
+          </div>
+          <p class="hint" id="pcTypeConfig"></p>
+        </div>
+
       </div>
     </section>
 
@@ -299,6 +312,34 @@
       </div>
     </section>
 
+    <!-- ============ PANEL: TRAITEMENT ============ -->
+    <section id="panel-traitement" class="panel">
+      <div class="cards-grid">
+        <div class="card"><span class="card__label">Temps alignement</span><span class="card__value" id="cardTempsAlignement">—</span></div>
+        <div class="card"><span class="card__label">Temps nuage de points</span><span class="card__value" id="cardTempsNuage">—</span></div>
+        <div class="card"><span class="card__label">Temps MNS</span><span class="card__value" id="cardTempsMNS">—</span></div>
+        <div class="card"><span class="card__label">Temps MNT</span><span class="card__value" id="cardTempsMNT">—</span></div>
+        <div class="card"><span class="card__label">Temps orthophoto</span><span class="card__value" id="cardTempsOrtho">—</span></div>
+        <div class="card"><span class="card__label">Temps total de traitement</span><span class="card__value" id="cardTempsTotal">—</span></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel-box">
+          <h3>Tailles des produits (estimation)</h3>
+          <div class="kv-list" id="detailTaillesProduits"></div>
+        </div>
+        <div class="panel-box">
+          <h3>Stockage recommandé</h3>
+          <div class="kv-list" id="detailStockage"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 charts-grid">
+        <div class="panel-box chart-box"><h3>Temps par étape de traitement</h3><canvas id="chartTraitementTemps"></canvas></div>
+        <div class="panel-box chart-box"><h3>Répartition des tailles des produits</h3><canvas id="chartTraitementTailles"></canvas></div>
+      </div>
+    </section>
+
     <!-- ============ PANEL: EXPORT ============ -->
     <section id="panel-export" class="panel">
       <div class="grid-2">
@@ -340,6 +381,8 @@
 <script src="utils.js"></script>
 <script src="calculs.js"></script>
 <script src="batteries.js"></script>
+<script src="performance.js"></script>
+<script src="traitement.js"></script>
 <script src="cartographie.js"></script>
 <script src="logo-dgi.js"></script>
 <script src="export.js"></script>
