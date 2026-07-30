@@ -119,7 +119,11 @@ const Meteo = (() => {
     const url = construireUrlOpenMeteo({ latitude, longitude, date });
     const reponse = await fetch(url);
     if (!reponse.ok) {
-      throw new Error(`Le service météo a répondu avec une erreur (HTTP ${reponse.status}).`);
+      // Open-Meteo renvoie un corps JSON `{ reason }` explicite (ex. date hors plage de
+      // prévision) : on le remonte tel quel plutôt qu'un simple code HTTP peu explicite.
+      let raison = '';
+      try { raison = (await reponse.json()).reason || ''; } catch (_) { /* corps non-JSON, on garde le message générique */ }
+      throw new Error(raison || `Le service météo a répondu avec une erreur (HTTP ${reponse.status}).`);
     }
     const donneesApi = await reponse.json();
     return extraireDonneesHeure(donneesApi, date, heure);
