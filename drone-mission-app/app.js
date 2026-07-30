@@ -25,6 +25,7 @@ const App = (() => {
   let dernieresMissions = [];
   let dernierResultatMeteo = null;
   let meteoAutoRempliFait = false;
+  let meteoRequeteEnCours = 0;
   let scenarios = [];
   const charts = {};
 
@@ -143,7 +144,9 @@ const App = (() => {
       const evt = el.type === 'checkbox' ? 'change' : 'input';
       el.addEventListener(evt, Utils.debounce(() => {
         let v = el.type === 'checkbox' ? el.checked : el.value;
-        if (type === Number) v = parseFloat(v) || 0;
+        if (type === Number) {
+          v = (v === '' && (path === 'meteo.latitude' || path === 'meteo.longitude')) ? null : (parseFloat(v) || 0);
+        }
         set(path, v);
         if (path === 'vol.orientationAuto') {
           document.getElementById('volOrientation').closest('.field').classList.toggle('is-hidden', v);
@@ -431,16 +434,19 @@ const App = (() => {
       Utils.toast('Renseignez une date et une heure.', 'warning');
       return;
     }
+    const requeteId = ++meteoRequeteEnCours;
     Utils.toast('Récupération des données météo…', 'info');
     try {
       const donnees = await Meteo.recupererMeteo({
         latitude: state.meteo.latitude, longitude: state.meteo.longitude,
         date: state.meteo.date, heure: state.meteo.heure
       });
+      if (requeteId !== meteoRequeteEnCours) return;
       dernierResultatMeteo = Meteo.analyserFaisabilite(donnees);
       majMeteo(donnees, dernierResultatMeteo);
       Utils.toast('Météo actualisée.', 'success');
     } catch (err) {
+      if (requeteId !== meteoRequeteEnCours) return;
       Utils.toast(`Échec de la récupération météo : ${err.message}`, 'danger');
     }
   }
