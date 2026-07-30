@@ -86,7 +86,7 @@ Nouvel onglet de navigation **« Conditions météo »**, contenant :
 - Un panel-box de saisie : date, heure, commune (texte libre, sans géocodage), latitude/longitude (nombre, auto-remplis depuis `Carto.getCentroid()` **une seule fois** à la première ouverture de l'onglet si les champs sont vides et qu'une zone existe ; bouton "Recentrer sur la zone" pour les resynchroniser à la demande) ; bouton **"Actualiser la météo"**.
 - Une grille de cartes : Vent, Rafales, Précipitations, Couverture nuageuse, Visibilité, Brouillard (Oui/Non), Humidité, Risque d'orage (Oui/Non).
 - 4 boutons de renvoi externe : "Ouvrir dans Ventusky", "Ouvrir dans Windy" (liens directs avec coordonnées), "Ouvrir Zoom Earth", "Ouvrir UAV Forecast" (page d'accueil + coordonnées affichées à côté, copiables).
-- Un grand panneau de verdict, coloré selon le statut : 🟢 MISSION AUTORISÉE / 🟠 MISSION DÉCONSEILLÉE / 🔴 MISSION ANNULÉE, avec la liste des raisons détaillées sous forme d'alertes (réutilise le pattern `alerte alerte--danger/warning/success` déjà existant).
+- Un grand panneau de verdict, coloré selon le statut : 🟢 MISSION AUTORISÉE / 🟠 MISSION DÉCONSEILLÉE / 🔴 MISSION ANNULÉE, avec la liste des raisons détaillées en dessous (classes dédiées `verdict-panel`/`verdict-panel--autorisee|deconseillee|annulee`, même langage visuel — couleurs, opacités — que le pattern `alerte alerte--danger/warning/success` déjà existant).
 
 ## Erreurs / validations
 
