@@ -15,6 +15,7 @@ const App = (() => {
     limites: { ...Calc.DEFAULTS.limites },
     batteries: { ...Batteries.DEFAULTS },
     performance: { ...Performance.DEFAULTS },
+    meteo: { date: new Date().toISOString().slice(0, 10), heure: '09:00', commune: '', latitude: null, longitude: null },
     theme: 'sombre',
     superficieManuelleHa: 50,
     nomZone: ''
@@ -22,6 +23,8 @@ const App = (() => {
 
   let dernierResultats = null;
   let dernieresMissions = [];
+  let dernierResultatMeteo = null;
+  let meteoAutoRempliFait = false;
   let scenarios = [];
   const charts = {};
 
@@ -36,6 +39,7 @@ const App = (() => {
     bindDessin();
     bindImportExport();
     bindScenarios();
+    bindMeteo();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -58,6 +62,10 @@ const App = (() => {
         const target = btn.dataset.target;
         document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('is-active', p.id === target));
         if (target === 'panel-carto') Carto.invalidateSize();
+        if (target === 'panel-meteo' && !meteoAutoRempliFait) {
+          meteoAutoRempliFait = true;
+          if (state.meteo.latitude == null && state.meteo.longitude == null) recentrerMeteoSurZone();
+        }
         document.getElementById('appShell').classList.remove('nav-open');
       });
     });
@@ -109,6 +117,11 @@ const App = (() => {
     ['coutBatterie', 'couts.coutCycleBatterie', Number],
     ['coutTraitement', 'couts.coutTraitementParHa', Number],
     ['pcType', 'performance.typeSelectionne', String],
+    ['meteoDate', 'meteo.date', String],
+    ['meteoHeure', 'meteo.heure', String],
+    ['meteoCommune', 'meteo.commune', String],
+    ['meteoLatitude', 'meteo.latitude', Number],
+    ['meteoLongitude', 'meteo.longitude', Number],
     ['superficieManuelle', 'superficieManuelleHa', Number],
     ['nomZone', 'nomZone', String]
   ];
@@ -163,6 +176,7 @@ const App = (() => {
     document.getElementById('cameraModele').textContent = state.camera.modele;
     document.getElementById('cameraRes').textContent = `${state.camera.largeurPx} × ${state.camera.hauteurPx} px (${state.camera.megapixels} MP)`;
     majPCTypeHint();
+    majCoordsAffichage();
   }
 
   function genererZoneTest() {
@@ -372,6 +386,97 @@ const App = (() => {
     document.getElementById('detailStockage').innerHTML = `
       <div><span>Taille totale des produits</span><b>${Utils.fmtBytes(r.tailleTotaleMo * 1024 * 1024)}</b></div>
       <div><span>Capacité minimale recommandée (+${margeStockagePct} %)</span><b>${Utils.fmtBytes(r.stockageRecommandeMo * 1024 * 1024)}</b></div>
+    `;
+  }
+
+  // ------------------------------------------------------------------
+  // Conditions météo
+  // ------------------------------------------------------------------
+  function bindMeteo() {
+    document.getElementById('btnMeteoRecentrer').addEventListener('click', recentrerMeteoSurZone);
+    document.getElementById('btnActualiserMeteo').addEventListener('click', actualiserMeteo);
+    document.getElementById('btnOuvrirVentusky').addEventListener('click', () => ouvrirLienMeteo('ventusky'));
+    document.getElementById('btnOuvrirWindy').addEventListener('click', () => ouvrirLienMeteo('windy'));
+    document.getElementById('btnOuvrirZoomEarth').addEventListener('click', () => ouvrirLienMeteo('zoomEarth'));
+    document.getElementById('btnOuvrirUAVForecast').addEventListener('click', () => ouvrirLienMeteo('uavForecast'));
+  }
+
+  function recentrerMeteoSurZone() {
+    const centre = Carto.getCentroid();
+    if (!centre) {
+      Utils.toast('Définissez une zone pour récupérer ses coordonnées.', 'warning');
+      return;
+    }
+    state.meteo.latitude = +centre[0].toFixed(4);
+    state.meteo.longitude = +centre[1].toFixed(4);
+    document.getElementById('meteoLatitude').value = state.meteo.latitude;
+    document.getElementById('meteoLongitude').value = state.meteo.longitude;
+    majCoordsAffichage();
+  }
+
+  function majCoordsAffichage() {
+    const el = document.getElementById('meteoCoordsAffichage');
+    if (!el) return;
+    el.textContent = (state.meteo.latitude != null && state.meteo.longitude != null)
+      ? `${state.meteo.latitude}, ${state.meteo.longitude}`
+      : '—';
+  }
+
+  async function actualiserMeteo() {
+    if (state.meteo.latitude == null || state.meteo.longitude == null) {
+      Utils.toast('Renseignez ou recentrez les coordonnées avant d\'actualiser la météo.', 'warning');
+      return;
+    }
+    if (!state.meteo.date || !state.meteo.heure) {
+      Utils.toast('Renseignez une date et une heure.', 'warning');
+      return;
+    }
+    Utils.toast('Récupération des données météo…', 'info');
+    try {
+      const donnees = await Meteo.recupererMeteo({
+        latitude: state.meteo.latitude, longitude: state.meteo.longitude,
+        date: state.meteo.date, heure: state.meteo.heure
+      });
+      dernierResultatMeteo = Meteo.analyserFaisabilite(donnees);
+      majMeteo(donnees, dernierResultatMeteo);
+      Utils.toast('Météo actualisée.', 'success');
+    } catch (err) {
+      Utils.toast(`Échec de la récupération météo : ${err.message}`, 'danger');
+    }
+  }
+
+  function ouvrirLienMeteo(service) {
+    if (state.meteo.latitude == null || state.meteo.longitude == null) {
+      Utils.toast('Renseignez ou recentrez les coordonnées avant d\'ouvrir un service météo.', 'warning');
+      return;
+    }
+    const liens = Meteo.construireLiensExternes({ latitude: state.meteo.latitude, longitude: state.meteo.longitude });
+    window.open(liens[service], '_blank', 'noopener');
+  }
+
+  function majMeteo(donnees, resultatFaisabilite) {
+    document.getElementById('meteoCardVent').textContent = `${Utils.fmt(donnees.ventKmh, 1)} km/h`;
+    document.getElementById('meteoCardRafales').textContent = `${Utils.fmt(donnees.rafalesKmh, 1)} km/h`;
+    document.getElementById('meteoCardPrecipitations').textContent = `${Utils.fmt(donnees.precipitationMm, 1)} mm`;
+    document.getElementById('meteoCardNuages').textContent = `${Utils.fmt(donnees.couvertureNuageusePct, 0)} %`;
+    document.getElementById('meteoCardVisibilite').textContent = `${Utils.fmt(donnees.visibiliteKm, 1)} km`;
+    document.getElementById('meteoCardBrouillard').textContent = donnees.brouillard ? 'Oui' : 'Non';
+    document.getElementById('meteoCardHumidite').textContent = `${Utils.fmt(donnees.humiditePct, 0)} %`;
+    document.getElementById('meteoCardOrage').textContent = donnees.orage ? 'Oui' : 'Non';
+
+    const libelles = {
+      autorisee: '🟢 MISSION AUTORISÉE',
+      deconseillee: '🟠 MISSION DÉCONSEILLÉE',
+      annulee: '🔴 MISSION ANNULÉE'
+    };
+    const raisonsHtml = resultatFaisabilite.raisons.length
+      ? `<ul class="verdict-panel__raisons">${resultatFaisabilite.raisons.map((r) => `<li>${r}</li>`).join('')}</ul>`
+      : '<p class="verdict-panel__raisons">Aucune restriction : tous les critères sont dans les seuils recommandés.</p>';
+    document.getElementById('meteoVerdictHost').innerHTML = `
+      <div class="verdict-panel verdict-panel--${resultatFaisabilite.verdict}">
+        <div class="verdict-panel__titre">${libelles[resultatFaisabilite.verdict]}</div>
+        ${raisonsHtml}
+      </div>
     `;
   }
 
