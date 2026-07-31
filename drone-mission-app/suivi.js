@@ -44,6 +44,7 @@ const Suivi = (() => {
     return { dossier, executions, etapes };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `missions_suivi` en objet JS (camelCase). */
   function mapperDossierVersJs(row) {
     return {
       id: row.id,
@@ -61,6 +62,7 @@ const Suivi = (() => {
     };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `executions_vol` en objet JS (camelCase). */
   function mapperExecutionVersJs(row) {
     return {
       id: row.id,
@@ -76,6 +78,7 @@ const Suivi = (() => {
     };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `etapes_traitement` en objet JS (camelCase). */
   function mapperEtapeVersJs(row) {
     return {
       id: row.id,
@@ -91,6 +94,7 @@ const Suivi = (() => {
     };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `controles_qualite` en objet JS (camelCase). */
   function mapperControleVersJs(row) {
     return {
       id: row.id,
@@ -118,10 +122,10 @@ const Suivi = (() => {
     const termines = dossiers.filter((d) => d.statutGlobal === 'terminee').length;
     const enCours = dossiers.filter((d) => d.statutGlobal === 'en_cours').length;
     const incidents = dossiers.reduce(
-      (acc, d) => acc + d.executions.filter((e) => e.statut === 'incident').length, 0
+      (acc, d) => acc + (d.executions || []).filter((e) => e.statut === 'incident').length, 0
     );
     const volumetrieTotaleMo = dossiers.reduce(
-      (acc, d) => acc + d.etapes.reduce((a2, e) => a2 + (e.tailleReelleMo || 0), 0), 0
+      (acc, d) => acc + (d.etapes || []).reduce((a2, e) => a2 + (e.tailleReelleMo || 0), 0), 0
     );
     return { total, termines, enCours, incidents, volumetrieTotaleMo };
   }

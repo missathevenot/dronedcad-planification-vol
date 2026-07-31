@@ -37,6 +37,14 @@ test('construireDossierDepuisProjet: commune defaults to empty string when not p
   assert.equal(dossier.commune, '');
 });
 
+test('construireDossierDepuisProjet: zero missions produces empty executions and no dangling loop bug', () => {
+  const { executions } = Suivi.construireDossierDepuisProjet({
+    nomZone: 'Zone Vide', commune: '', superficieHa: 5,
+    nombreMissionsPrevues: 0, agentReferentId: null, donneesPlanification: {}
+  });
+  assert.deepEqual(executions, []);
+});
+
 test('mapperDossierVersJs: converts a snake_case Supabase row to a camelCase object', () => {
   const row = {
     id: 'd1', nom_zone: 'Zone A', commune: 'Cocody', date_planification: '2026-08-01',
