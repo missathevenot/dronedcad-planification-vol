@@ -105,7 +105,8 @@ create table controles_qualite (
 **Row Level Security (résumé des politiques)** :
 - Tout utilisateur authentifié avec un `profil` actif peut **lire** l'ensemble des dossiers, exécutions, étapes et contrôles (transparence interne à l'équipe — pas de cloisonnement par service à ce stade).
 - `executions_vol` : seul le `telepilote_id` assigné, ou un `responsable`/`admin`, peut **modifier** une ligne.
-- `etapes_traitement` et `controles_qualite` : seul le `technicien_id`/`controleur_id` assigné, ou un `responsable`/`admin`, peut **modifier** une ligne.
+- `etapes_traitement` : seul le `technicien_id` assigné, ou un `responsable`/`admin`, peut **modifier** une ligne.
+- `controles_qualite` : chaque contrôle est un **nouvel enregistrement** (jamais modifié après coup), créé par le `controleur_id` qui l'effectue ou par un `responsable`/`admin` — ce choix conserve l'historique complet des recontrôles (ex. un livrable « à reprendre » puis contrôlé de nouveau plus tard comme « conforme »), plutôt que d'écraser le résultat précédent.
 - `missions_suivi` : seuls `responsable` et `admin` peuvent **créer** ou modifier le statut global d'un dossier.
 - `profils` : chaque agent peut lire son propre profil ; seul `admin` peut créer/modifier des profils.
 
@@ -124,7 +125,7 @@ Nouvel onglet **« Suivi post levé par drone »** :
 
 - Nouveau bouton dans l'onglet **« Export & projet »** : **« Envoyer vers le Suivi post levé par drone »**.
   - Si l'utilisateur n'est pas connecté, ouvre l'écran de connexion du nouvel onglet.
-  - Une fois connecté, crée un enregistrement `missions_suivi` à partir de l'état courant du projet : `nom_zone` = `state.nomZone`, `commune` = `state.meteo.commune` (le seul champ commune existant dans l'app, saisi dans l'onglet Météo — vide si jamais renseigné), `superficie_ha` = résultat calculé de `Calc.calculerMission`, `nombre_missions_prevues` = `Batteries.calculerAutonomie(...).nbMissionsAutomatiques`. Un enregistrement `executions_vol` est créé par mission planifiée (statut initial `planifiee`) et un enregistrement `etapes_traitement` par étape de traitement pour ce dossier (statut initial `a_faire`).
+  - Une fois connecté, crée un enregistrement `missions_suivi` à partir de l'état courant du projet : `nom_zone` = `state.nomZone`, `commune` = `state.meteo.commune` (le seul champ commune existant dans l'app, saisi dans l'onglet Météo — vide si jamais renseigné), `superficie_ha` = `dernierResultats.surfaceHa`, `nombre_missions_prevues` = `dernierResultats.nbMissionsAutomatiques` (déjà calculé par `recalculer()` et mis à l'échelle de la flotte complète — pas de nouveau calcul nécessaire). Un enregistrement `executions_vol` est créé par mission planifiée (statut initial `planifiee`) et un enregistrement `etapes_traitement` par étape de traitement pour ce dossier (statut initial `a_faire`).
   - `donnees_planification` stocke un instantané complet de l'état du projet au moment de l'envoi (mêmes données que celles sauvegardées dans le fichier `.json` du projet), pour traçabilité — mais cet instantané n'est plus modifié ensuite ; seules les tables `executions_vol`/`etapes_traitement`/`controles_qualite` évoluent.
 - Aucune autre partie de l'application n'est modifiée : `calculs.js`, `batteries.js`, `performance.js`, `traitement.js`, `meteo.js`, `cartographie.js`, `export.js` restent inchangés.
 
