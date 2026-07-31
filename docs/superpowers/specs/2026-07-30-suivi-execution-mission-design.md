@@ -1,6 +1,6 @@
 # Suivi d'exécution de mission — Design
 
-Première tranche du futur module « Suivi opérationnel, cadastral et fiscal » de DroneDCAD Planification Vol. Ce document ne couvre que cette première tranche ; les suivantes (mise à jour cadastrale, recoupement fiscal, identification des contribuables, tableaux de bord consolidés) seront spécifiées séparément une fois celle-ci construite et testée.
+Première tranche du futur module « Suivi opérationnel, cadastral et fiscal » de DroneDCAD Planification Vol. Cette tranche prend la forme d'un nouvel onglet **« Suivi post levé par drone »**. Ce document ne couvre que cette première tranche ; les suivantes (mise à jour cadastrale, recoupement fiscal, identification des contribuables, tableaux de bord consolidés) seront spécifiées séparément une fois celle-ci construite et testée.
 
 ## Contexte
 
@@ -29,7 +29,7 @@ Contrairement aux blocs précédents (Batteries, Performance/Traitement, Météo
   - Fonctions CRUD pures orientées métier : `creerDossierMission(donnees)`, `listerDossiers(filtres)`, `mettreAJourExecutionVol(id, donnees)`, `mettreAJourEtapeTraitement(id, donnees)`, `mettreAJourControleQualite(id, donnees)`, `recupererTableauDeBord()`.
   - Toute la logique de mapping français camelCase (JS) ↔ snake_case (Postgres) est isolée dans ce fichier, comme `meteo.js` isole le mapping avec l'API Open-Meteo.
 - Chargé dans `index.html` après `meteo.js`, avant `app.js`.
-- Nouvel onglet de navigation **« Suivi opérationnel »**, avec son propre écran de connexion : c'est le seul endroit de l'application qui exige un compte. Les autres onglets restent accessibles sans connexion, y compris si l'utilisateur n'a pas de compte Supabase.
+- Nouvel onglet de navigation **« Suivi post levé par drone »**, positionné en dernier dans la barre de navigation, juste après l'onglet « Export & projet ». Il a son propre écran de connexion : c'est le seul endroit de l'application qui exige un compte. Les autres onglets restent accessibles sans connexion, y compris si l'utilisateur n'a pas de compte Supabase.
 
 ## Modèle de données (PostgreSQL / Supabase)
 
@@ -111,7 +111,7 @@ create table controles_qualite (
 
 ## Interface utilisateur
 
-Nouvel onglet **« Suivi opérationnel »** :
+Nouvel onglet **« Suivi post levé par drone »** :
 - **Écran de connexion** (email + mot de passe Supabase) si aucune session active ; sinon accès direct.
 - **Liste des dossiers** : tableau filtrable par statut / commune / date, avec pour chaque ligne : nom de zone, commune, statut global, taux d'avancement (calculé), agent référent.
 - **Détail d'un dossier**, avec 3 sous-onglets :
@@ -122,7 +122,7 @@ Nouvel onglet **« Suivi opérationnel »** :
 
 ## Intégration avec l'existant
 
-- Nouveau bouton dans l'onglet **« Export & projet »** : **« Envoyer vers le Suivi opérationnel »**.
+- Nouveau bouton dans l'onglet **« Export & projet »** : **« Envoyer vers le Suivi post levé par drone »**.
   - Si l'utilisateur n'est pas connecté, ouvre l'écran de connexion du nouvel onglet.
   - Une fois connecté, crée un enregistrement `missions_suivi` à partir de l'état courant du projet : `nom_zone` = `state.nomZone`, `commune` = `state.meteo.commune` (le seul champ commune existant dans l'app, saisi dans l'onglet Météo — vide si jamais renseigné), `superficie_ha` = résultat calculé de `Calc.calculerMission`, `nombre_missions_prevues` = `Batteries.calculerAutonomie(...).nbMissionsAutomatiques`. Un enregistrement `executions_vol` est créé par mission planifiée (statut initial `planifiee`) et un enregistrement `etapes_traitement` par étape de traitement pour ce dossier (statut initial `a_faire`).
   - `donnees_planification` stocke un instantané complet de l'état du projet au moment de l'envoi (mêmes données que celles sauvegardées dans le fichier `.json` du projet), pour traçabilité — mais cet instantané n'est plus modifié ensuite ; seules les tables `executions_vol`/`etapes_traitement`/`controles_qualite` évoluent.
@@ -144,7 +144,7 @@ Nouvel onglet **« Suivi opérationnel »** :
 ## Compatibilité / non-régression
 
 - Aucune fonctionnalité existante n'est modifiée ; toutes restent utilisables hors-ligne sans compte, exactement comme avant cette tranche.
-- Le mode hors-ligne PWA reste garanti pour tout le reste de l'application ; seul l'onglet Suivi opérationnel nécessite une connexion, au même titre que l'actualisation météo.
+- Le mode hors-ligne PWA reste garanti pour tout le reste de l'application ; seul l'onglet Suivi post levé par drone nécessite une connexion, au même titre que l'actualisation météo.
 - Aucun champ existant de `state` (projet DroneDCAD) n'est modifié ; l'envoi vers le suivi est une action de lecture seule sur `state`, purement additive.
 
 ## Hors périmètre de cette tranche
