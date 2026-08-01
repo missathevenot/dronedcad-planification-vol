@@ -56,6 +56,9 @@
       <button class="nav__item" data-target="panel-export">
         <span class="nav__ico">⭳</span> Export &amp; projet
       </button>
+      <button class="nav__item" data-target="panel-suivi">
+        <span class="nav__ico">📡</span> Suivi post levé par drone
+      </button>
     </nav>
 
     <div class="sidebar__foot">
@@ -418,6 +421,61 @@
       </div>
     </section>
 
+    <!-- ============ PANEL: SUIVI POST LEVÉ ============ -->
+    <section id="panel-suivi" class="panel">
+
+      <div id="suiviConnexionHost" class="panel-box">
+        <h3>Connexion</h3>
+        <div class="field"><label>Email</label><input type="email" id="suiviEmail"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="suiviMotDePasse"></div>
+        <div id="suiviConnexionErreur" class="alerte alerte--danger is-hidden"></div>
+        <div class="btn-row">
+          <button id="btnSuiviConnexion" class="btn btn--accent">Se connecter</button>
+        </div>
+      </div>
+
+      <div id="suiviContenuHost" class="is-hidden">
+
+        <div class="panel-box">
+          <div class="btn-row" style="justify-content:space-between">
+            <span id="suiviUtilisateurConnecte" class="hint"></span>
+            <button id="btnSuiviDeconnexion" class="btn btn--ghost">Déconnexion</button>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <h3>Tableau de bord opérationnel</h3>
+          <div class="cards-grid">
+            <div class="card"><span class="card__label">Dossiers</span><span class="card__value" id="suiviStatTotal">—</span></div>
+            <div class="card"><span class="card__label">Terminés</span><span class="card__value" id="suiviStatTermines">—</span></div>
+            <div class="card"><span class="card__label">En cours</span><span class="card__value" id="suiviStatEnCours">—</span></div>
+            <div class="card"><span class="card__label">Vols en incident</span><span class="card__value" id="suiviStatIncidents">—</span></div>
+            <div class="card"><span class="card__label">Volumétrie produite</span><span class="card__value" id="suiviStatVolumetrie">—</span></div>
+          </div>
+        </div>
+
+        <div id="suiviListeHost" class="panel-box">
+          <h3>Dossiers de mission</h3>
+          <div class="field-row">
+            <div class="field">
+              <label>Statut</label>
+              <select id="suiviFiltreStatut">
+                <option value="">Tous</option>
+                <option value="planifiee">Planifiée</option>
+                <option value="en_cours">En cours</option>
+                <option value="terminee">Terminée</option>
+              </select>
+            </div>
+            <div class="field"><label>Commune</label><input type="text" id="suiviFiltreCommune" placeholder="Toutes"></div>
+          </div>
+          <div id="suiviListeDossiers"></div>
+        </div>
+
+        <div id="suiviDetailHost" class="is-hidden"></div>
+
+      </div>
+    </section>
+
   </div>
 </div>
 
@@ -433,10 +491,12 @@
 <script src="batteries.js"></script>
 <script src="performance.js"></script>
 <script src="traitement.js"></script>
+<script src="libs/supabase.js"></script>
 <script src="meteo.js"></script>
 <script src="cartographie.js"></script>
 <script src="logo-dgi.js"></script>
 <script src="export.js"></script>
+<script src="suivi.js"></script>
 <script src="app.js"></script>
 <script>
   // --- Enregistrement du service worker (mode hors-ligne complet) ---

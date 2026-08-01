@@ -185,6 +185,21 @@ input,select{font-family:var(--font-mono);}
 .verdict-panel__titre{font-size:1.3rem; font-weight:700; margin-bottom:8px;}
 .verdict-panel__raisons{margin:0; padding-left:20px; font-size:.88rem; line-height:1.5;}
 
+/* ---------------------------------- Suivi post levé par drone ---------------------------------- */
+.suivi-carte-dossier{
+  border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px;
+  cursor:pointer; transition:border-color .12s ease;
+}
+.suivi-carte-dossier:hover{border-color:var(--amber);}
+.suivi-carte-dossier__ligne1{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+.suivi-carte-dossier__titre{font-weight:700; color:var(--text);}
+.suivi-carte-dossier__meta{font-size:.8rem; color:var(--muted);}
+.suivi-sous-onglet.is-active{background:var(--panel-2); border-color:var(--amber); color:var(--amber);}
+.suivi-tache-carte{
+  border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px;
+}
+.suivi-tache-carte__entete{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+
 /* ---------------------------------- Cartographie ---------------------------------- */
 .carto-layout{display:grid; grid-template-columns:280px 1fr; gap:18px; height:calc(100vh - 150px); min-height:520px;}
 .carto-tools{overflow-y:auto;}
@@ -209,6 +224,10 @@ input,select{font-family:var(--font-mono);}
 .table tbody tr:hover{background:var(--panel-2);}
 .badge{padding:2px 9px; border-radius:999px; font-size:.7rem; font-family:var(--font-ui);}
 .badge--info{background:rgba(79,209,197,.15); color:var(--cyan);}
+.badge--success{background:rgba(74,222,128,.15); color:var(--success);}
+.badge--warning{background:rgba(240,168,78,.15); color:var(--amber);}
+.badge--danger{background:rgba(242,84,91,.15); color:var(--danger);}
+.badge--muted{background:rgba(140,160,191,.15); color:var(--muted);}
 
 /* ---------------------------------- Toasts ---------------------------------- */
 .toast-host{position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column; gap:8px; z-index:999;}
