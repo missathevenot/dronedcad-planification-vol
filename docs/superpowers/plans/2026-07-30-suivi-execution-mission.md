@@ -168,6 +168,59 @@ Ce compte est nécessaire pour créer les comptes des autres agents (télépilot
 
 Noter dans le contexte transmis au Task 4 : l'URL du projet Supabase et la clé publique (anon/publishable key) récupérées à l'étape 4.
 
+- [ ] **Step 7: Corriger la récursion RLS sur `profils` (découvert lors de la vérification manuelle, Task 11)**
+
+Le schéma du Step 3 provoque une **récursion infinie** (`infinite recursion detected in policy for relation "profils"`) dès qu'une politique RLS vérifie un rôle en interrogeant `profils` depuis une politique sur `profils` (ou, par transitivité, depuis les politiques des autres tables) — un bug qui casse toute connexion réelle à l'application (`profilConnecte()` interroge `profils` juste après chaque connexion). Appliquer ce correctif via `apply_migration` **immédiatement après le Step 3**, avant de passer au Step 4 :
+
+```sql
+create or replace function public.est_agent_actif()
+returns boolean language sql security definer set search_path = public stable
+as $$ select exists (select 1 from profils where id = auth.uid() and statut = 'actif'); $$;
+
+create or replace function public.est_responsable_ou_admin()
+returns boolean language sql security definer set search_path = public stable
+as $$ select exists (select 1 from profils where id = auth.uid() and role in ('responsable','admin')); $$;
+
+create or replace function public.est_admin()
+returns boolean language sql security definer set search_path = public stable
+as $$ select exists (select 1 from profils where id = auth.uid() and role = 'admin'); $$;
+
+drop policy if exists "admin_gere_profils" on profils;
+create policy "admin_gere_profils" on profils for all to authenticated
+  using (public.est_admin()) with check (public.est_admin());
+
+drop policy if exists "lecture_tous_agents_actifs" on missions_suivi;
+create policy "lecture_tous_agents_actifs" on missions_suivi for select to authenticated using (public.est_agent_actif());
+drop policy if exists "ecriture_responsable_admin" on missions_suivi;
+create policy "ecriture_responsable_admin" on missions_suivi for insert to authenticated with check (public.est_responsable_ou_admin());
+drop policy if exists "modification_responsable_admin" on missions_suivi;
+create policy "modification_responsable_admin" on missions_suivi for update to authenticated using (public.est_responsable_ou_admin());
+
+drop policy if exists "lecture_tous_agents_actifs" on executions_vol;
+create policy "lecture_tous_agents_actifs" on executions_vol for select to authenticated using (public.est_agent_actif());
+drop policy if exists "creation_responsable_admin" on executions_vol;
+create policy "creation_responsable_admin" on executions_vol for insert to authenticated with check (public.est_responsable_ou_admin());
+drop policy if exists "modification_telepilote_assigne_ou_responsable" on executions_vol;
+create policy "modification_telepilote_assigne_ou_responsable" on executions_vol for update to authenticated
+  using (telepilote_id = auth.uid() or public.est_responsable_ou_admin());
+
+drop policy if exists "lecture_tous_agents_actifs" on etapes_traitement;
+create policy "lecture_tous_agents_actifs" on etapes_traitement for select to authenticated using (public.est_agent_actif());
+drop policy if exists "creation_responsable_admin" on etapes_traitement;
+create policy "creation_responsable_admin" on etapes_traitement for insert to authenticated with check (public.est_responsable_ou_admin());
+drop policy if exists "modification_technicien_assigne_ou_responsable" on etapes_traitement;
+create policy "modification_technicien_assigne_ou_responsable" on etapes_traitement for update to authenticated
+  using (technicien_id = auth.uid() or public.est_responsable_ou_admin());
+
+drop policy if exists "lecture_tous_agents_actifs" on controles_qualite;
+create policy "lecture_tous_agents_actifs" on controles_qualite for select to authenticated using (public.est_agent_actif());
+drop policy if exists "creation_technicien_ou_responsable" on controles_qualite;
+create policy "creation_technicien_ou_responsable" on controles_qualite for insert to authenticated
+  with check (controleur_id = auth.uid() or public.est_responsable_ou_admin());
+```
+
+Vérifié en rejouant, via SQL (`set local role authenticated; set local request.jwt.claim.sub = '<uuid>';`), le scénario d'un télépilote tentant de modifier un vol non assigné (bloqué) puis un vol assigné (autorisé), sans erreur de récursion. Voir aussi le document de conception, section « Row Level Security », pour le détail de ce correctif.
+
 ---
 
 ## Task 2: Vendoriser la librairie cliente Supabase

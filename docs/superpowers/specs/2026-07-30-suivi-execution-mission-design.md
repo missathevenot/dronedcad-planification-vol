@@ -110,6 +110,8 @@ create table controles_qualite (
 - `missions_suivi` : seuls `responsable` et `admin` peuvent **créer** ou modifier le statut global d'un dossier.
 - `profils` : chaque agent peut lire son propre profil ; seul `admin` peut créer/modifier des profils.
 
+**Correctif appliqué après la vérification manuelle (Task 11)** : les vérifications de rôle ci-dessus (« est admin », « est responsable ou admin », « est agent actif ») ne peuvent pas être exprimées comme une sous-requête directe vers `profils` à l'intérieur d'une politique RLS sur `profils` lui-même (ni, par transitivité, dans les politiques des autres tables qui vérifient un rôle) : Postgres réévalue les politiques de `profils` pour cette sous-requête, ce qui déclenche une **récursion infinie** (`infinite recursion detected in policy for relation "profils"`) — un bug qui aurait cassé toute connexion réelle à l'application, puisque `profilConnecte()` interroge `profils` juste après chaque connexion. Corrigé en introduisant trois fonctions `SECURITY DEFINER` (`public.est_admin()`, `public.est_responsable_ou_admin()`, `public.est_agent_actif()`), qui contournent RLS pour cette vérification précise et cassent la boucle — pattern standard recommandé par Supabase pour ce cas. Toutes les politiques listées ci-dessus utilisent désormais ces fonctions plutôt qu'une sous-requête directe. Vérifié en rejouant, via SQL, le scénario exact d'un télépilote tentant de modifier un vol qui ne lui est pas assigné (bloqué) puis un vol qui lui est assigné (autorisé), sans plus aucune erreur de récursion.
+
 ## Interface utilisateur
 
 Nouvel onglet **« Suivi post levé par drone »** :
