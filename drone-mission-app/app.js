@@ -47,6 +47,7 @@ const App = (() => {
     bindEnvoiVersSuivi();
     bindSuivi();
     bindFiltresSuivi();
+    bindSelectionZone();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -644,6 +645,25 @@ const App = (() => {
     const zonesFiltrees = communeFiltre ? zonesEnCache.filter((z) => z.commune === communeFiltre) : zonesEnCache;
     document.getElementById('zonesDatalist').innerHTML =
       zonesFiltrees.map((z) => `<option value="${Utils.escapeHtml(z.nom)}"></option>`).join('');
+  }
+
+  function bindSelectionZone() {
+    document.getElementById('zoneCommune').addEventListener('change', () => {
+      peuplerDatalistZones();
+    });
+    document.getElementById('zoneNom').addEventListener('change', (e) => {
+      const zoneCorrespondante = zonesEnCache.find((z) => z.nom === e.target.value);
+      if (!zoneCorrespondante) return;
+      chargerZone(zoneCorrespondante);
+    });
+  }
+
+  function chargerZone(zone) {
+    state.zone = { id: zone.id, nom: zone.nom, commune: zone.commune, description: zone.description };
+    document.getElementById('zoneNom').value = zone.nom;
+    document.getElementById('zoneDescription').value = zone.description || '';
+    if (zone.commune) document.getElementById('zoneCommune').value = zone.commune;
+    if (zone.geometrie && zone.geometrie.length >= 3) Carto.setZone(zone.geometrie);
   }
 
   async function afficherListeSuivi() {
