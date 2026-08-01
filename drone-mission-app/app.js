@@ -667,6 +667,224 @@ const App = (() => {
     }
   }
 
+  const LIBELLES_STATUT_VOL = { planifiee: 'Planifiée', executee: 'Exécutée', reportee: 'Reportée', incident: 'Incident', annulee: 'Annulée' };
+  const BADGE_STATUT_VOL = { planifiee: 'muted', executee: 'success', reportee: 'warning', incident: 'danger', annulee: 'danger' };
+  const LIBELLES_ETAPE = {
+    alignement: 'Alignement', nuage_clairseme: 'Nuage clairsemé', nuage_dense: 'Nuage dense',
+    mns: 'MNS', mnt: 'MNT', orthophoto: 'Orthophoto', modele_3d: 'Modèle 3D'
+  };
+  const LIBELLES_STATUT_ETAPE = { a_faire: 'À faire', en_cours: 'En cours', terminee: 'Terminée' };
+  const BADGE_STATUT_ETAPE = { a_faire: 'muted', en_cours: 'warning', terminee: 'success' };
+  const LIBELLES_LIVRABLE = { orthophoto: 'Orthophoto', mns: 'MNS', mnt: 'MNT', nuage_points: 'Nuage de points' };
+  const LIBELLES_RESULTAT_QUALITE = { conforme: 'Conforme', rejete: 'Rejeté', a_reprendre: 'À reprendre' };
+  const BADGE_RESULTAT_QUALITE = { conforme: 'success', rejete: 'danger', a_reprendre: 'warning' };
+
+  let suiviDossierActuel = null;
+
+  function bindSousOngletsSuivi() {
+    document.querySelectorAll('.suivi-sous-onglet').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.suivi-sous-onglet').forEach((b) => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        const cible = btn.dataset.sousOnglet;
+        document.getElementById('suiviSousOngletExecution').classList.toggle('is-hidden', cible !== 'execution');
+        document.getElementById('suiviSousOngletTraitement').classList.toggle('is-hidden', cible !== 'traitement');
+        document.getElementById('suiviSousOngletQualite').classList.toggle('is-hidden', cible !== 'qualite');
+      });
+    });
+  }
+
+  async function afficherDetailSuivi(id) {
+    document.getElementById('suiviListeHost').classList.add('is-hidden');
+    const hote = document.getElementById('suiviDetailHost');
+    hote.classList.remove('is-hidden');
+    try {
+      suiviDossierActuel = await Suivi.recupererDossier(id);
+      majAffichageDetailSuivi();
+    } catch (err) {
+      hote.classList.add('is-hidden');
+      document.getElementById('suiviListeHost').classList.remove('is-hidden');
+      Utils.toast(`Échec du chargement du dossier : ${err.message}`, 'danger');
+    }
+  }
+
+  function majAffichageDetailSuivi() {
+    const { dossier, executions, etapes, controles } = suiviDossierActuel;
+    const avancement = Suivi.calculerAvancementDossier(executions, etapes);
+
+    document.getElementById('suiviDetailHost').innerHTML = `
+      <div class="panel-box">
+        <button id="btnSuiviRetourListe" class="btn btn--ghost">← Retour à la liste</button>
+        <h3 id="suiviDetailTitre">${Utils.escapeHtml(dossier.nomZone)}</h3>
+        <div id="suiviDetailInfos" class="kv-list">
+          <div><span>Commune</span><b>${Utils.escapeHtml(dossier.commune) || '—'}</b></div>
+          <div><span>Superficie</span><b>${dossier.superficieHa} ha</b></div>
+          <div><span>Statut global</span><b>${LIBELLES_STATUT_DOSSIER[dossier.statutGlobal]}</b></div>
+          <div><span>Avancement</span><b>${avancement} %</b></div>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <div class="btn-row">
+          <button class="btn btn--ghost suivi-sous-onglet is-active" data-sous-onglet="execution">Exécution des vols</button>
+          <button class="btn btn--ghost suivi-sous-onglet" data-sous-onglet="traitement">Traitement</button>
+          <button class="btn btn--ghost suivi-sous-onglet" data-sous-onglet="qualite">Contrôle qualité</button>
+        </div>
+      </div>
+
+      <div id="suiviSousOngletExecution" class="suivi-sous-panel">${rendreCartesExecutions(executions)}</div>
+      <div id="suiviSousOngletTraitement" class="suivi-sous-panel is-hidden">${rendreCartesEtapes(etapes)}</div>
+      <div id="suiviSousOngletQualite" class="suivi-sous-panel is-hidden">${rendreCartesQualite(controles)}</div>
+    `;
+
+    document.getElementById('btnSuiviRetourListe').addEventListener('click', afficherListeSuivi);
+    bindSousOngletsSuivi();
+    bindFormulairesDetailSuivi();
+  }
+
+  function rendreCartesExecutions(executions) {
+    if (executions.length === 0) return '<p class="hint">Aucun vol pour ce dossier.</p>';
+    return executions.map((e) => `
+      <div class="suivi-tache-carte" data-execution-id="${e.id}">
+        <div class="suivi-tache-carte__entete">
+          <b>Vol n°${e.numeroMission}</b>
+          <span class="badge badge--${BADGE_STATUT_VOL[e.statut]}">${LIBELLES_STATUT_VOL[e.statut]}</span>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Statut</label>
+            <select class="suivi-vol-statut">
+              ${Object.keys(LIBELLES_STATUT_VOL).map((v) => `<option value="${v}" ${v === e.statut ? 'selected' : ''}>${LIBELLES_STATUT_VOL[v]}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Date réelle</label><input type="date" class="suivi-vol-date" value="${e.dateReelle || ''}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Durée réelle (min)</label><input type="number" class="suivi-vol-duree" value="${e.dureeReelleMin ?? ''}"></div>
+          <div class="field"><label>Photos réelles</label><input type="number" class="suivi-vol-photos" value="${e.photosReelles ?? ''}"></div>
+        </div>
+        <div class="field"><label>Incident (si applicable)</label><textarea class="suivi-vol-incident" rows="2">${Utils.escapeHtml(e.descriptionIncident) || ''}</textarea></div>
+        <button class="btn btn--accent suivi-vol-enregistrer">Enregistrer</button>
+      </div>
+    `).join('');
+  }
+
+  function rendreCartesEtapes(etapes) {
+    if (etapes.length === 0) return '<p class="hint">Aucune étape de traitement pour ce dossier.</p>';
+    return etapes.map((e) => `
+      <div class="suivi-tache-carte" data-etape-id="${e.id}">
+        <div class="suivi-tache-carte__entete">
+          <b>${LIBELLES_ETAPE[e.etape]}</b>
+          <span class="badge badge--${BADGE_STATUT_ETAPE[e.statut]}">${LIBELLES_STATUT_ETAPE[e.statut]}</span>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Statut</label>
+            <select class="suivi-etape-statut">
+              ${Object.keys(LIBELLES_STATUT_ETAPE).map((v) => `<option value="${v}" ${v === e.statut ? 'selected' : ''}>${LIBELLES_STATUT_ETAPE[v]}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Durée réelle (min)</label><input type="number" class="suivi-etape-duree" value="${e.dureeReelleMin ?? ''}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Date début</label><input type="date" class="suivi-etape-debut" value="${e.dateDebut || ''}"></div>
+          <div class="field"><label>Date fin</label><input type="date" class="suivi-etape-fin" value="${e.dateFin || ''}"></div>
+        </div>
+        <div class="field"><label>Taille produite (Mo)</label><input type="number" class="suivi-etape-taille" value="${e.tailleReelleMo ?? ''}"></div>
+        <button class="btn btn--accent suivi-etape-enregistrer">Enregistrer</button>
+      </div>
+    `).join('');
+  }
+
+  function rendreCartesQualite(controles) {
+    const historique = controles.length === 0 ? '<p class="hint">Aucun contrôle enregistré.</p>' : controles.map((c) => `
+      <div class="suivi-tache-carte">
+        <div class="suivi-tache-carte__entete">
+          <b>${LIBELLES_LIVRABLE[c.livrable]}</b>
+          <span class="badge badge--${BADGE_RESULTAT_QUALITE[c.resultat]}">${LIBELLES_RESULTAT_QUALITE[c.resultat]}</span>
+        </div>
+        <p class="hint">${Utils.escapeHtml(c.commentaire) || 'Aucun commentaire.'} — ${c.dateControle}</p>
+      </div>
+    `).join('');
+
+    return `
+      ${historique}
+      <div class="suivi-tache-carte">
+        <b>Nouveau contrôle</b>
+        <div class="field-row">
+          <div class="field"><label>Livrable</label>
+            <select id="suiviNouveauLivrable">
+              ${Object.keys(LIBELLES_LIVRABLE).map((v) => `<option value="${v}">${LIBELLES_LIVRABLE[v]}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Résultat</label>
+            <select id="suiviNouveauResultat">
+              ${Object.keys(LIBELLES_RESULTAT_QUALITE).map((v) => `<option value="${v}">${LIBELLES_RESULTAT_QUALITE[v]}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Commentaire</label><textarea id="suiviNouveauCommentaire" rows="2"></textarea></div>
+        <button id="btnSuiviEnregistrerQualite" class="btn btn--accent">Enregistrer le contrôle</button>
+      </div>
+    `;
+  }
+
+  function bindFormulairesDetailSuivi() {
+    document.querySelectorAll('[data-execution-id]').forEach((carte) => {
+      carte.querySelector('.suivi-vol-enregistrer').addEventListener('click', async () => {
+        const id = carte.dataset.executionId;
+        try {
+          await Suivi.mettreAJourExecutionVol(id, {
+            statut: carte.querySelector('.suivi-vol-statut').value,
+            dateReelle: carte.querySelector('.suivi-vol-date').value || null,
+            dureeReelleMin: carte.querySelector('.suivi-vol-duree').value ? Number(carte.querySelector('.suivi-vol-duree').value) : null,
+            photosReelles: carte.querySelector('.suivi-vol-photos').value ? Number(carte.querySelector('.suivi-vol-photos').value) : null,
+            descriptionIncident: carte.querySelector('.suivi-vol-incident').value
+          });
+          Utils.toast('Vol mis à jour.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-etape-id]').forEach((carte) => {
+      carte.querySelector('.suivi-etape-enregistrer').addEventListener('click', async () => {
+        const id = carte.dataset.etapeId;
+        try {
+          await Suivi.mettreAJourEtapeTraitement(id, {
+            statut: carte.querySelector('.suivi-etape-statut').value,
+            dateDebut: carte.querySelector('.suivi-etape-debut').value || null,
+            dateFin: carte.querySelector('.suivi-etape-fin').value || null,
+            dureeReelleMin: carte.querySelector('.suivi-etape-duree').value ? Number(carte.querySelector('.suivi-etape-duree').value) : null,
+            tailleReelleMo: carte.querySelector('.suivi-etape-taille').value ? Number(carte.querySelector('.suivi-etape-taille').value) : null
+          });
+          Utils.toast('Étape mise à jour.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+        }
+      });
+    });
+
+    const btnQualite = document.getElementById('btnSuiviEnregistrerQualite');
+    if (btnQualite) {
+      btnQualite.addEventListener('click', async () => {
+        try {
+          await Suivi.enregistrerControleQualite({
+            missionSuiviId: suiviDossierActuel.dossier.id,
+            livrable: document.getElementById('suiviNouveauLivrable').value,
+            resultat: document.getElementById('suiviNouveauResultat').value,
+            commentaire: document.getElementById('suiviNouveauCommentaire').value
+          });
+          Utils.toast('Contrôle qualité enregistré.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+        }
+      });
+    }
+  }
+
   function majTableauMissions(missions) {
     const tbody = document.querySelector('#tableMissions tbody');
     tbody.innerHTML = '';
