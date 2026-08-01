@@ -41,6 +41,7 @@ const App = (() => {
     bindImportExport();
     bindScenarios();
     bindMeteo();
+    bindEnvoiVersSuivi();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -484,6 +485,45 @@ const App = (() => {
         ${raisonsHtml}
       </div>
     `;
+  }
+
+  // ------------------------------------------------------------------
+  // Suivi post levé par drone — envoi d'un projet planifié
+  // ------------------------------------------------------------------
+  function bindEnvoiVersSuivi() {
+    document.getElementById('btnEnvoyerVersSuivi').addEventListener('click', envoyerVersSuivi);
+  }
+
+  async function envoyerVersSuivi() {
+    if (!Carto.getZone() || Carto.getZone().length < 3) {
+      Utils.toast('Définissez une zone avant d\'envoyer vers le suivi.', 'warning');
+      return;
+    }
+    const session = await Suivi.sessionActuelle();
+    if (!session) {
+      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant d\'envoyer un dossier.', 'warning');
+      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
+      return;
+    }
+    if (!dernierResultats) {
+      Utils.toast('Aucun résultat de mission calculé pour le moment.', 'warning');
+      return;
+    }
+    Utils.toast('Envoi du dossier vers le suivi…', 'info');
+    try {
+      const profil = await Suivi.profilConnecte();
+      await Suivi.creerDossierMission({
+        nomZone: state.nomZone || 'Zone sans nom',
+        commune: state.meteo.commune,
+        superficieHa: dernierResultats.surfaceHa,
+        nombreMissionsPrevues: dernierResultats.nbMissionsAutomatiques,
+        agentReferentId: profil ? profil.id : null,
+        donneesPlanification: state
+      });
+      Utils.toast('Dossier envoyé vers le Suivi post levé par drone.', 'success');
+    } catch (err) {
+      Utils.toast(`Échec de l'envoi vers le suivi : ${err.message}`, 'danger');
+    }
   }
 
   function majTableauMissions(missions) {
