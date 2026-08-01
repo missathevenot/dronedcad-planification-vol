@@ -42,6 +42,8 @@ const App = (() => {
     bindScenarios();
     bindMeteo();
     bindEnvoiVersSuivi();
+    bindSuivi();
+    initialiserOngletSuivi();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -533,6 +535,61 @@ const App = (() => {
     } finally {
       btn.disabled = false;
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Suivi post levé par drone — connexion et navigation de l'onglet
+  // ------------------------------------------------------------------
+  function bindSuivi() {
+    document.getElementById('btnSuiviConnexion').addEventListener('click', connecterSuivi);
+    document.getElementById('btnSuiviDeconnexion').addEventListener('click', deconnecterSuivi);
+    document.getElementById('btnSuiviRetourListe')?.addEventListener('click', afficherListeSuivi);
+  }
+
+  async function initialiserOngletSuivi() {
+    const session = await Suivi.sessionActuelle();
+    if (session) {
+      await afficherContenuSuiviConnecte();
+    } else {
+      document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
+      document.getElementById('suiviContenuHost').classList.add('is-hidden');
+    }
+  }
+
+  async function connecterSuivi() {
+    const email = document.getElementById('suiviEmail').value.trim();
+    const motDePasse = document.getElementById('suiviMotDePasse').value;
+    const erreurHost = document.getElementById('suiviConnexionErreur');
+    erreurHost.classList.add('is-hidden');
+    if (!email || !motDePasse) {
+      erreurHost.textContent = 'Renseignez votre email et votre mot de passe.';
+      erreurHost.classList.remove('is-hidden');
+      return;
+    }
+    try {
+      await Suivi.connexion(email, motDePasse);
+      await afficherContenuSuiviConnecte();
+    } catch (err) {
+      erreurHost.textContent = err.message;
+      erreurHost.classList.remove('is-hidden');
+    }
+  }
+
+  async function deconnecterSuivi() {
+    await Suivi.deconnexion();
+    document.getElementById('suiviEmail').value = '';
+    document.getElementById('suiviMotDePasse').value = '';
+    document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
+    document.getElementById('suiviContenuHost').classList.add('is-hidden');
+  }
+
+  async function afficherContenuSuiviConnecte() {
+    document.getElementById('suiviConnexionHost').classList.add('is-hidden');
+    document.getElementById('suiviContenuHost').classList.remove('is-hidden');
+    const profil = await Suivi.profilConnecte();
+    document.getElementById('suiviUtilisateurConnecte').textContent =
+      profil ? `Connecté : ${profil.nomComplet} (${profil.role})` : 'Connecté';
+    await afficherListeSuivi();
   }
 
   function majTableauMissions(missions) {
