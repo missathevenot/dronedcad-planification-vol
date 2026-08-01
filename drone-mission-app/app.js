@@ -72,10 +72,6 @@ const App = (() => {
         document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('is-active', p.id === target));
         if (target === 'panel-carto') {
           Carto.invalidateSize();
-          if (!zonesChargeesFait) {
-            zonesChargeesFait = true;
-            initialiserOngletZones();
-          }
         }
         if (target === 'panel-meteo' && !meteoAutoRempliFait) {
           meteoAutoRempliFait = true;
