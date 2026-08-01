@@ -129,23 +129,6 @@
       <div class="grid-2">
 
         <div class="panel-box">
-          <h3>Zone de la mission</h3>
-          <div class="field">
-            <label>Nom de la zone</label>
-            <input type="text" id="nomZone" placeholder="Ex : Zone cadastrale de Yopougon">
-          </div>
-          <div class="field">
-            <label>Superficie de référence (ha)</label>
-            <input type="number" id="superficieManuelle" min="0" step="0.5" value="50">
-          </div>
-          <div class="btn-row">
-            <button id="btnGenererZoneTest" class="btn btn--accent">Générer une zone carrée</button>
-            <button id="btnEffacerZone" class="btn btn--ghost">Effacer la zone</button>
-          </div>
-          <p class="hint">Ou dessinez / importez la zone réelle depuis l'onglet <b>Cartographie</b> (KML, GeoJSON, Shapefile zippé).</p>
-        </div>
-
-        <div class="panel-box">
           <h3>Drone — DJI Matrice 350 RTK</h3>
           <p class="hint" id="droneModele"></p>
           <div class="field-row">
@@ -252,8 +235,27 @@
     <section id="panel-carto" class="panel is-active">
       <div class="carto-layout">
         <div class="carto-tools panel-box">
-          <h3>Outils</h3>
-          <div class="btn-col">
+          <h3>Zone</h3>
+          <div class="field">
+            <label>Localité ou Commune</label>
+            <input type="text" id="zoneCommune" list="communesDatalist" placeholder="Ex : Yopougon">
+            <datalist id="communesDatalist"></datalist>
+          </div>
+          <div class="field">
+            <label>Nom de la zone</label>
+            <input type="text" id="zoneNom" list="zonesDatalist" placeholder="Ex : Zone cadastrale de Yopougon">
+            <datalist id="zonesDatalist"></datalist>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="zoneDescription" rows="3"></textarea>
+          </div>
+          <div class="btn-row">
+            <button id="btnEnregistrerZone" class="btn btn--accent">💾 Enregistrer</button>
+            <button id="btnSupprimerZone" class="btn btn--warn">🗑 Supprimer</button>
+          </div>
+
+          <div class="btn-col mt">
             <button id="btnDessinerZone" class="btn btn--accent">✎ Dessiner la zone</button>
             <button id="btnDessinerExclusion" class="btn btn--warn">✎ Zone d'exclusion</button>
             <button id="btnPointDecollage" class="btn btn--ghost">📍 Point de décollage</button>
