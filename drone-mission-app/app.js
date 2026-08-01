@@ -56,6 +56,8 @@ const App = (() => {
     remplirFormulaireDepuisEtat();
     genererZoneTest(); // zone de démonstration au chargement
     recalculer();
+    zonesChargeesFait = true;
+    initialiserOngletZones();
   }
 
   // ------------------------------------------------------------------
@@ -68,7 +70,13 @@ const App = (() => {
         btn.classList.add('is-active');
         const target = btn.dataset.target;
         document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('is-active', p.id === target));
-        if (target === 'panel-carto') Carto.invalidateSize();
+        if (target === 'panel-carto') {
+          Carto.invalidateSize();
+          if (!zonesChargeesFait) {
+            zonesChargeesFait = true;
+            initialiserOngletZones();
+          }
+        }
         if (target === 'panel-meteo' && !meteoAutoRempliFait) {
           meteoAutoRempliFait = true;
           if (state.meteo.latitude == null && state.meteo.longitude == null) recentrerMeteoSurZone();
@@ -611,6 +619,35 @@ const App = (() => {
   function bindFiltresSuivi() {
     document.getElementById('suiviFiltreStatut').addEventListener('change', afficherListeSuivi);
     document.getElementById('suiviFiltreCommune').addEventListener('input', Utils.debounce(afficherListeSuivi, 300));
+  }
+
+  // ------------------------------------------------------------------
+  // Zone & Cartographie — bibliothèque de zones partagées
+  // ------------------------------------------------------------------
+  let zonesChargeesFait = false;
+  let zonesEnCache = [];
+
+  async function initialiserOngletZones() {
+    try {
+      zonesEnCache = await Zones.listerZones();
+      peuplerCommunes();
+      peuplerDatalistZones();
+    } catch (err) {
+      Utils.toast(`Échec du chargement des zones enregistrées : ${err.message}`, 'danger');
+    }
+  }
+
+  function peuplerCommunes() {
+    const communes = Zones.communesDistinctes(zonesEnCache);
+    document.getElementById('communesDatalist').innerHTML =
+      communes.map((c) => `<option value="${Utils.escapeHtml(c)}"></option>`).join('');
+  }
+
+  function peuplerDatalistZones() {
+    const communeFiltre = document.getElementById('zoneCommune').value.trim();
+    const zonesFiltrees = communeFiltre ? zonesEnCache.filter((z) => z.commune === communeFiltre) : zonesEnCache;
+    document.getElementById('zonesDatalist').innerHTML =
+      zonesFiltrees.map((z) => `<option value="${Utils.escapeHtml(z.nom)}"></option>`).join('');
   }
 
   async function afficherListeSuivi() {
