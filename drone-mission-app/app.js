@@ -612,6 +612,7 @@ const App = (() => {
   }
 
   async function afficherListeSuivi() {
+    suiviSousOngletActif = 'execution';
     document.getElementById('suiviDetailHost').classList.add('is-hidden');
     document.getElementById('suiviListeHost').classList.remove('is-hidden');
     await Promise.all([majTableauDeBordSuivi(), rafraichirListeDossiers()]);
@@ -680,6 +681,7 @@ const App = (() => {
   const BADGE_RESULTAT_QUALITE = { conforme: 'success', rejete: 'danger', a_reprendre: 'warning' };
 
   let suiviDossierActuel = null;
+  let suiviSousOngletActif = 'execution';
 
   function bindSousOngletsSuivi() {
     document.querySelectorAll('.suivi-sous-onglet').forEach((btn) => {
@@ -687,6 +689,7 @@ const App = (() => {
         document.querySelectorAll('.suivi-sous-onglet').forEach((b) => b.classList.remove('is-active'));
         btn.classList.add('is-active');
         const cible = btn.dataset.sousOnglet;
+        suiviSousOngletActif = cible;
         document.getElementById('suiviSousOngletExecution').classList.toggle('is-hidden', cible !== 'execution');
         document.getElementById('suiviSousOngletTraitement').classList.toggle('is-hidden', cible !== 'traitement');
         document.getElementById('suiviSousOngletQualite').classList.toggle('is-hidden', cible !== 'qualite');
@@ -726,15 +729,15 @@ const App = (() => {
 
       <div class="panel-box">
         <div class="btn-row">
-          <button class="btn btn--ghost suivi-sous-onglet is-active" data-sous-onglet="execution">Exécution des vols</button>
-          <button class="btn btn--ghost suivi-sous-onglet" data-sous-onglet="traitement">Traitement</button>
-          <button class="btn btn--ghost suivi-sous-onglet" data-sous-onglet="qualite">Contrôle qualité</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'execution' ? ' is-active' : ''}" data-sous-onglet="execution">Exécution des vols</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'traitement' ? ' is-active' : ''}" data-sous-onglet="traitement">Traitement</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'qualite' ? ' is-active' : ''}" data-sous-onglet="qualite">Contrôle qualité</button>
         </div>
       </div>
 
-      <div id="suiviSousOngletExecution" class="suivi-sous-panel">${rendreCartesExecutions(executions)}</div>
-      <div id="suiviSousOngletTraitement" class="suivi-sous-panel is-hidden">${rendreCartesEtapes(etapes)}</div>
-      <div id="suiviSousOngletQualite" class="suivi-sous-panel is-hidden">${rendreCartesQualite(controles)}</div>
+      <div id="suiviSousOngletExecution" class="suivi-sous-panel${suiviSousOngletActif === 'execution' ? '' : ' is-hidden'}">${rendreCartesExecutions(executions)}</div>
+      <div id="suiviSousOngletTraitement" class="suivi-sous-panel${suiviSousOngletActif === 'traitement' ? '' : ' is-hidden'}">${rendreCartesEtapes(etapes)}</div>
+      <div id="suiviSousOngletQualite" class="suivi-sous-panel${suiviSousOngletActif === 'qualite' ? '' : ' is-hidden'}">${rendreCartesQualite(controles)}</div>
     `;
 
     document.getElementById('btnSuiviRetourListe').addEventListener('click', afficherListeSuivi);
@@ -829,8 +832,10 @@ const App = (() => {
 
   function bindFormulairesDetailSuivi() {
     document.querySelectorAll('[data-execution-id]').forEach((carte) => {
-      carte.querySelector('.suivi-vol-enregistrer').addEventListener('click', async () => {
+      const btn = carte.querySelector('.suivi-vol-enregistrer');
+      btn.addEventListener('click', async () => {
         const id = carte.dataset.executionId;
+        btn.disabled = true;
         try {
           await Suivi.mettreAJourExecutionVol(id, {
             statut: carte.querySelector('.suivi-vol-statut').value,
@@ -843,13 +848,16 @@ const App = (() => {
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
         } catch (err) {
           Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+          btn.disabled = false;
         }
       });
     });
 
     document.querySelectorAll('[data-etape-id]').forEach((carte) => {
-      carte.querySelector('.suivi-etape-enregistrer').addEventListener('click', async () => {
+      const btn = carte.querySelector('.suivi-etape-enregistrer');
+      btn.addEventListener('click', async () => {
         const id = carte.dataset.etapeId;
+        btn.disabled = true;
         try {
           await Suivi.mettreAJourEtapeTraitement(id, {
             statut: carte.querySelector('.suivi-etape-statut').value,
@@ -862,6 +870,7 @@ const App = (() => {
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
         } catch (err) {
           Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+          btn.disabled = false;
         }
       });
     });
@@ -869,6 +878,7 @@ const App = (() => {
     const btnQualite = document.getElementById('btnSuiviEnregistrerQualite');
     if (btnQualite) {
       btnQualite.addEventListener('click', async () => {
+        btnQualite.disabled = true;
         try {
           await Suivi.enregistrerControleQualite({
             missionSuiviId: suiviDossierActuel.dossier.id,
@@ -880,6 +890,7 @@ const App = (() => {
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
         } catch (err) {
           Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+          btnQualite.disabled = false;
         }
       });
     }
