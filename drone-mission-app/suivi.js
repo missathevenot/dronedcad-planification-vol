@@ -170,7 +170,12 @@ const Suivi = (() => {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return null;
     const { data, error } = await sb.from('profils').select('*').eq('id', user.id).single();
-    if (error) throw new Error(`Échec du chargement du profil : ${error.message}`);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error('Votre compte existe mais aucun profil ne lui est associé. Contactez un administrateur.');
+      }
+      throw new Error(`Échec du chargement du profil : ${error.message}`);
+    }
     return { id: data.id, nomComplet: data.nom_complet, role: data.role, statut: data.statut };
   }
 
@@ -187,11 +192,21 @@ const Suivi = (() => {
     const executionsAvecId = executions.map((e) => ({ ...e, mission_suivi_id: dossierInsere.id }));
     const etapesAvecId = etapes.map((e) => ({ ...e, mission_suivi_id: dossierInsere.id }));
 
-    const { error: erreurExecutions } = await sb.from('executions_vol').insert(executionsAvecId);
-    if (erreurExecutions) throw new Error(`Dossier créé mais échec de la création des vols : ${erreurExecutions.message}`);
+    if (executionsAvecId.length) {
+      const { error: erreurExecutions } = await sb.from('executions_vol').insert(executionsAvecId);
+      if (erreurExecutions) {
+        const err = new Error(`Dossier créé mais échec de la création des vols : ${erreurExecutions.message}`);
+        err.dossierId = dossierInsere.id;
+        throw err;
+      }
+    }
 
     const { error: erreurEtapes } = await sb.from('etapes_traitement').insert(etapesAvecId);
-    if (erreurEtapes) throw new Error(`Dossier créé mais échec de la création des étapes de traitement : ${erreurEtapes.message}`);
+    if (erreurEtapes) {
+      const err = new Error(`Dossier créé mais échec de la création des étapes de traitement : ${erreurEtapes.message}`);
+      err.dossierId = dossierInsere.id;
+      throw err;
+    }
 
     return mapperDossierVersJs(dossierInsere);
   }
