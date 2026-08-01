@@ -25,6 +25,7 @@ const App = (() => {
   let dernieresMissions = [];
   let dernierResultatMeteo = null;
   let meteoAutoRempliFait = false;
+  let suiviInitFait = false;
   let meteoRequeteEnCours = 0;
   let scenarios = [];
   const charts = {};
@@ -43,7 +44,6 @@ const App = (() => {
     bindMeteo();
     bindEnvoiVersSuivi();
     bindSuivi();
-    initialiserOngletSuivi();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -69,6 +69,10 @@ const App = (() => {
         if (target === 'panel-meteo' && !meteoAutoRempliFait) {
           meteoAutoRempliFait = true;
           if (state.meteo.latitude == null && state.meteo.longitude == null) recentrerMeteoSurZone();
+        }
+        if (target === 'panel-suivi' && !suiviInitFait) {
+          suiviInitFait = true;
+          initialiserOngletSuivi();
         }
         document.getElementById('appShell').classList.remove('nav-open');
       });
@@ -566,12 +570,17 @@ const App = (() => {
       erreurHost.classList.remove('is-hidden');
       return;
     }
+    const btn = document.getElementById('btnSuiviConnexion');
+    btn.disabled = true;
     try {
       await Suivi.connexion(email, motDePasse);
+      document.getElementById('suiviMotDePasse').value = '';
       await afficherContenuSuiviConnecte();
     } catch (err) {
       erreurHost.textContent = err.message;
       erreurHost.classList.remove('is-hidden');
+    } finally {
+      btn.disabled = false;
     }
   }
 
