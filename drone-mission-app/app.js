@@ -495,8 +495,17 @@ const App = (() => {
   }
 
   async function envoyerVersSuivi() {
-    if (!Carto.getZone() || Carto.getZone().length < 3) {
+    const zone = Carto.getZone();
+    if (zone.length < 3) {
       Utils.toast('Définissez une zone avant d\'envoyer vers le suivi.', 'warning');
+      return;
+    }
+    if (!dernierResultats) {
+      Utils.toast('Aucun résultat de mission calculé pour le moment.', 'warning');
+      return;
+    }
+    if (!dernierResultats.nbMissionsAutomatiques) {
+      Utils.toast('La configuration actuelle ne permet aucun vol (vérifiez les paramètres batteries). Corrigez avant d\'envoyer vers le suivi.', 'warning');
       return;
     }
     const session = await Suivi.sessionActuelle();
@@ -505,10 +514,8 @@ const App = (() => {
       document.querySelector('.nav__item[data-target="panel-suivi"]').click();
       return;
     }
-    if (!dernierResultats) {
-      Utils.toast('Aucun résultat de mission calculé pour le moment.', 'warning');
-      return;
-    }
+    const btn = document.getElementById('btnEnvoyerVersSuivi');
+    btn.disabled = true;
     Utils.toast('Envoi du dossier vers le suivi…', 'info');
     try {
       const profil = await Suivi.profilConnecte();
@@ -523,6 +530,8 @@ const App = (() => {
       Utils.toast('Dossier envoyé vers le Suivi post levé par drone.', 'success');
     } catch (err) {
       Utils.toast(`Échec de l'envoi vers le suivi : ${err.message}`, 'danger');
+    } finally {
+      btn.disabled = false;
     }
   }
 
