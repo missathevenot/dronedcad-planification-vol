@@ -132,7 +132,7 @@ const App = (() => {
     ['meteoHeure', 'meteo.heure', String],
     ['meteoCommune', 'meteo.commune', String],
     ['meteoLatitude', 'meteo.latitude', Number],
-    ['meteoLongitude', 'meteo.longitude', Number],
+    ['meteoLongitude', 'meteo.longitude', Number]
   ];
 
   function set(path, value) {
@@ -165,7 +165,6 @@ const App = (() => {
         recalculer();
       }, 200));
     });
-
   }
 
   function majPCTypeHint() {
