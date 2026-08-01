@@ -59,7 +59,7 @@ Nouveau fichier `drone-mission-app/zones.js`, module IIFE `Zones`, même pattern
 
 Le groupe *Outils* est renommé **« Zone »** et s'enrichit, en tête, des champs suivants (dans cet ordre) :
 
-1. **Localité ou Commune** — liste déroulante (`<select>`) alimentée dynamiquement par `Zones.communesDistinctes()`, avec une option « Toutes » par défaut. Sélectionner une commune filtre les zones proposées au champ suivant.
+1. **Localité ou Commune** — champ texte associé à un `<datalist>` alimenté dynamiquement par `Zones.communesDistinctes()` (même mécanique que le champ « Nom de la zone » ci-dessous : liste déroulante de suggestions, tout en restant modifiable pour saisir une commune encore jamais enregistrée lors de la création d'une nouvelle zone). Sélectionner ou taper une commune filtre les zones proposées au champ suivant ; laisser le champ vide n'applique aucun filtre.
 2. **Nom de la zone** — champ texte associé à un `<datalist>` (permet de taper un nouveau nom OU de choisir une zone existante dans la liste suggérée, filtrée par la commune sélectionnée). Choisir un nom qui correspond exactement à une zone existante charge automatiquement sa géométrie sur la carte (`Carto.setZone(...)`), sa commune et sa description.
 3. **Description** — zone de texte multi-lignes (`<textarea>`).
 4. Boutons **Enregistrer** et **Supprimer** (à la suite des outils de dessin existants).
