@@ -36,7 +36,55 @@ const Zones = (() => {
     return [...new Set(communes)].sort((a, b) => a.localeCompare(b, 'fr'));
   }
 
-  return { mapperZoneVersJs, communesDistinctes };
+  // ------------------------------------------------------------------
+  // Fonctions impures (appels réseau Supabase, non testées automatiquement)
+  // ------------------------------------------------------------------
+
+  /** Liste toutes les zones de la bibliothèque partagée, triées par nom. */
+  async function listerZones() {
+    const sb = Suivi.initClient();
+    const { data, error } = await sb.from('zones').select('*').order('nom');
+    if (error) throw new Error(`Échec du chargement des zones : ${error.message}`);
+    return data.map(mapperZoneVersJs);
+  }
+
+  /** Crée une nouvelle zone dans la bibliothèque partagée. */
+  async function creerZone(donnees) {
+    const sb = Suivi.initClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const ligne = {
+      nom: donnees.nom,
+      commune: donnees.commune || '',
+      description: donnees.description || '',
+      geometrie: donnees.geometrie,
+      created_by: user ? user.id : null
+    };
+    const { data, error } = await sb.from('zones').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de la création de la zone : ${error.message}`);
+    return mapperZoneVersJs(data);
+  }
+
+  /** Met à jour une zone existante. `donnees` peut contenir nom/commune/description/geometrie. */
+  async function mettreAJourZone(id, donnees) {
+    const sb = Suivi.initClient();
+    const patch = { updated_at: new Date().toISOString() };
+    if (donnees.nom !== undefined) patch.nom = donnees.nom;
+    if (donnees.commune !== undefined) patch.commune = donnees.commune;
+    if (donnees.description !== undefined) patch.description = donnees.description;
+    if (donnees.geometrie !== undefined) patch.geometrie = donnees.geometrie;
+    const { data, error } = await sb.from('zones').update(patch).eq('id', id).select().single();
+    if (error) throw new Error(`Échec de la mise à jour de la zone : ${error.message}`);
+    return mapperZoneVersJs(data);
+  }
+
+  /** Supprime une zone de la bibliothèque partagée. */
+  async function supprimerZone(id) {
+    const sb = Suivi.initClient();
+    const { error } = await sb.from('zones').delete().eq('id', id);
+    if (error) throw new Error(`Échec de la suppression de la zone : ${error.message}`);
+  }
+
+  return { mapperZoneVersJs, communesDistinctes, listerZones, creerZone, mettreAJourZone, supprimerZone };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Zones;
