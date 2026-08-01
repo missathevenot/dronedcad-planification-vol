@@ -44,6 +44,16 @@ const Utils = (() => {
     return `${fmt(v, i === 0 ? 0 : 2)} ${units[i]}`;
   }
 
+  /** Échappe les caractères HTML spéciaux d'une chaîne, pour une interpolation sûre dans innerHTML. */
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /** Conversion hectares <-> m² */
   const haToM2 = (ha) => ha * 10000;
   const m2ToHa = (m2) => m2 / 10000;
@@ -145,7 +155,7 @@ const Utils = (() => {
   }
 
   return {
-    uid, fmt, fmtDuration, fmtBytes, haToM2, m2ToHa, km2ToM2,
+    uid, fmt, fmtDuration, fmtBytes, escapeHtml, haToM2, m2ToHa, km2ToM2,
     haversine, polygonAreaM2, centroid, toast, debounce, clamp, now,
     toCSV, download
   };

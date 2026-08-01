@@ -27,6 +27,7 @@ const App = (() => {
   let meteoAutoRempliFait = false;
   let suiviInitFait = false;
   let meteoRequeteEnCours = 0;
+  let suiviListeRequeteEnCours = 0;
   let scenarios = [];
   const charts = {};
 
@@ -630,6 +631,7 @@ const App = (() => {
   }
 
   async function rafraichirListeDossiers() {
+    const requeteId = ++suiviListeRequeteEnCours;
     const hote = document.getElementById('suiviListeDossiers');
     try {
       const filtres = {
@@ -637,23 +639,29 @@ const App = (() => {
         commune: document.getElementById('suiviFiltreCommune').value.trim()
       };
       const dossiers = await Suivi.listerDossiers(filtres);
+      if (requeteId !== suiviListeRequeteEnCours) return;
       if (dossiers.length === 0) {
         hote.innerHTML = '<p class="hint">Aucun dossier pour ces filtres.</p>';
         return;
       }
-      hote.innerHTML = dossiers.map((d) => `
+      hote.innerHTML = dossiers.map((d) => {
+        const statutBadge = BADGE_STATUT_DOSSIER[d.statutGlobal] || 'muted';
+        const statutLabel = LIBELLES_STATUT_DOSSIER[d.statutGlobal] || d.statutGlobal;
+        return `
         <div class="suivi-carte-dossier" data-id="${d.id}">
           <div class="suivi-carte-dossier__ligne1">
-            <span class="suivi-carte-dossier__titre">${d.nomZone}</span>
-            <span class="badge badge--${BADGE_STATUT_DOSSIER[d.statutGlobal]}">${LIBELLES_STATUT_DOSSIER[d.statutGlobal]}</span>
+            <span class="suivi-carte-dossier__titre">${Utils.escapeHtml(d.nomZone)}</span>
+            <span class="badge badge--${statutBadge}">${statutLabel}</span>
           </div>
-          <div class="suivi-carte-dossier__meta">${d.commune || 'Commune non renseignée'} · ${d.datePlanification} · ${d.superficieHa} ha</div>
+          <div class="suivi-carte-dossier__meta">${Utils.escapeHtml(d.commune) || 'Commune non renseignée'} · ${d.datePlanification} · ${d.superficieHa} ha</div>
         </div>
-      `).join('');
+      `;
+      }).join('');
       hote.querySelectorAll('.suivi-carte-dossier').forEach((carte) => {
         carte.addEventListener('click', () => afficherDetailSuivi(carte.dataset.id));
       });
     } catch (err) {
+      if (requeteId !== suiviListeRequeteEnCours) return;
       hote.innerHTML = '';
       Utils.toast(`Échec du chargement des dossiers : ${err.message}`, 'danger');
     }
