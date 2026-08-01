@@ -306,7 +306,7 @@ const Suivi = (() => {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
     mapperEtapeVersJs, mapperControleVersJs, calculerAvancementDossier, calculerStatsTableauDeBord,
-    connexion, deconnexion, sessionActuelle, profilConnecte,
+    connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
     creerDossierMission, listerDossiers, recupererDossier,
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord
   };
