@@ -18,7 +18,7 @@ const App = (() => {
     meteo: { date: new Date().toISOString().slice(0, 10), heure: '09:00', commune: '', latitude: null, longitude: null },
     theme: 'sombre',
     superficieManuelleHa: 50,
-    nomZone: ''
+    zone: { id: null, nom: '', commune: '', description: '' }
   };
 
   let dernierResultats = null;
@@ -133,8 +133,6 @@ const App = (() => {
     ['meteoCommune', 'meteo.commune', String],
     ['meteoLatitude', 'meteo.latitude', Number],
     ['meteoLongitude', 'meteo.longitude', Number],
-    ['superficieManuelle', 'superficieManuelleHa', Number],
-    ['nomZone', 'nomZone', String]
   ];
 
   function set(path, value) {
@@ -168,8 +166,6 @@ const App = (() => {
       }, 200));
     });
 
-    document.getElementById('btnGenererZoneTest').addEventListener('click', genererZoneTest);
-    document.getElementById('btnEffacerZone').addEventListener('click', () => Carto.effacerTout());
   }
 
   function majPCTypeHint() {
