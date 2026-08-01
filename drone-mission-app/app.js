@@ -28,6 +28,7 @@ const App = (() => {
   let suiviInitFait = false;
   let meteoRequeteEnCours = 0;
   let suiviListeRequeteEnCours = 0;
+  let suiviTableauDeBordRequeteEnCours = 0;
   let scenarios = [];
   const charts = {};
 
@@ -587,11 +588,17 @@ const App = (() => {
   }
 
   async function deconnecterSuivi() {
-    await Suivi.deconnexion();
-    document.getElementById('suiviEmail').value = '';
-    document.getElementById('suiviMotDePasse').value = '';
-    document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
-    document.getElementById('suiviContenuHost').classList.add('is-hidden');
+    const btn = document.getElementById('btnSuiviDeconnexion');
+    btn.disabled = true;
+    try {
+      await Suivi.deconnexion();
+      document.getElementById('suiviEmail').value = '';
+      document.getElementById('suiviMotDePasse').value = '';
+      document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
+      document.getElementById('suiviContenuHost').classList.add('is-hidden');
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function afficherContenuSuiviConnecte() {
@@ -619,14 +626,17 @@ const App = (() => {
   }
 
   async function majTableauDeBordSuivi() {
+    const requeteId = ++suiviTableauDeBordRequeteEnCours;
     try {
       const stats = await Suivi.recupererTableauDeBord();
+      if (requeteId !== suiviTableauDeBordRequeteEnCours) return;
       document.getElementById('suiviStatTotal').textContent = stats.total;
       document.getElementById('suiviStatTermines').textContent = stats.termines;
       document.getElementById('suiviStatEnCours').textContent = stats.enCours;
       document.getElementById('suiviStatIncidents').textContent = stats.incidents;
       document.getElementById('suiviStatVolumetrie').textContent = Utils.fmtBytes(stats.volumetrieTotaleMo * 1024 * 1024);
     } catch (err) {
+      if (requeteId !== suiviTableauDeBordRequeteEnCours) return;
       Utils.toast(`Échec du chargement du tableau de bord : ${err.message}`, 'danger');
     }
   }

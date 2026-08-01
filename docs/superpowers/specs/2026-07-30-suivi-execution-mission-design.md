@@ -26,7 +26,7 @@ Contrairement aux blocs précédents (Batteries, Performance/Traitement, Météo
 - Nouveau fichier `suivi.js`, module IIFE `Suivi` (même pattern que `Batteries`/`Traitement`/`Meteo`) :
   - Initialisation du client Supabase.
   - Fonctions d'authentification (`connexion`, `deconnexion`, `sessionActuelle`).
-  - Fonctions CRUD pures orientées métier : `creerDossierMission(donnees)`, `listerDossiers(filtres)`, `mettreAJourExecutionVol(id, donnees)`, `mettreAJourEtapeTraitement(id, donnees)`, `mettreAJourControleQualite(id, donnees)`, `recupererTableauDeBord()`.
+  - Fonctions CRUD orientées métier : `creerDossierMission(donnees)`, `listerDossiers(filtres)`, `recupererDossier(id)`, `mettreAJourExecutionVol(id, donnees)`, `mettreAJourEtapeTraitement(id, donnees)`, `enregistrerControleQualite(donnees)`, `recupererTableauDeBord()`.
   - Toute la logique de mapping français camelCase (JS) ↔ snake_case (Postgres) est isolée dans ce fichier, comme `meteo.js` isole le mapping avec l'API Open-Meteo.
 - Chargé dans `index.html` après `meteo.js`, avant `app.js`.
 - Nouvel onglet de navigation **« Suivi post levé par drone »**, positionné en dernier dans la barre de navigation, juste après l'onglet « Export & projet ». Il a son propre écran de connexion : c'est le seul endroit de l'application qui exige un compte. Les autres onglets restent accessibles sans connexion, y compris si l'utilisateur n'a pas de compte Supabase.

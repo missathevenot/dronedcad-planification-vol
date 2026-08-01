@@ -195,6 +195,7 @@ input,select{font-family:var(--font-mono);}
 .suivi-carte-dossier__titre{font-weight:700; color:var(--text);}
 .suivi-carte-dossier__meta{font-size:.8rem; color:var(--muted);}
 .suivi-sous-onglet.is-active{background:var(--panel-2); border-color:var(--amber); color:var(--amber);}
+.suivi-sous-panel{margin-top:14px;}
 .suivi-tache-carte{
   border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px;
 }
