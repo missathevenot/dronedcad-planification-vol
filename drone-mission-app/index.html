@@ -34,27 +34,27 @@
     </div>
 
     <nav class="nav">
-      <button class="nav__item is-active" data-target="panel-dashboard">
-        <span class="nav__ico">◧</span> Tableau de bord
-        <span id="navAlertBadge" class="nav__badge is-hidden">0</span>
+      <button class="nav__item is-active" data-target="panel-carto">
+        <span class="nav__ico">⌖</span> Zone &amp; Cartographie
       </button>
       <button class="nav__item" data-target="panel-params">
-        <span class="nav__ico">⚙</span> Zone &amp; paramètres
-      </button>
-      <button class="nav__item" data-target="panel-carto">
-        <span class="nav__ico">⌖</span> Cartographie
+        <span class="nav__ico">⚙</span> Paramètres
       </button>
       <button class="nav__item" data-target="panel-missions">
         <span class="nav__ico">≣</span> Missions &amp; scénarios
       </button>
-      <button class="nav__item" data-target="panel-traitement">
-        <span class="nav__ico">🖥</span> Estimation des traitements
-      </button>
       <button class="nav__item" data-target="panel-meteo">
         <span class="nav__ico">☁</span> Conditions météo
       </button>
+      <button class="nav__item" data-target="panel-traitement">
+        <span class="nav__ico">🖥</span> Estimation des traitements
+      </button>
       <button class="nav__item" data-target="panel-export">
         <span class="nav__ico">⭳</span> Export &amp; projet
+      </button>
+      <button class="nav__item" data-target="panel-dashboard">
+        <span class="nav__ico">◧</span> Tableau de bord
+        <span id="navAlertBadge" class="nav__badge is-hidden">0</span>
       </button>
       <button class="nav__item" data-target="panel-suivi">
         <span class="nav__ico">📡</span> Suivi post levé par drone
@@ -87,7 +87,7 @@
     <div id="toastHost" class="toast-host"></div>
 
     <!-- ============ PANEL: DASHBOARD ============ -->
-    <section id="panel-dashboard" class="panel is-active">
+    <section id="panel-dashboard" class="panel">
       <div id="alertesHost" class="alertes"></div>
 
       <div class="cards-grid">
@@ -248,8 +248,8 @@
       </div>
     </section>
 
-    <!-- ============ PANEL: CARTOGRAPHIE ============ -->
-    <section id="panel-carto" class="panel">
+    <!-- ============ PANEL: ZONE & CARTOGRAPHIE ============ -->
+    <section id="panel-carto" class="panel is-active">
       <div class="carto-layout">
         <div class="carto-tools panel-box">
           <h3>Outils</h3>
@@ -498,6 +498,7 @@
 <script src="logo-dgi.js"></script>
 <script src="export.js"></script>
 <script src="suivi.js"></script>
+<script src="zones.js"></script>
 <script src="app.js"></script>
 <script>
   // --- Enregistrement du service worker (mode hors-ligne complet) ---
