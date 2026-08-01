@@ -648,9 +648,7 @@ const App = (() => {
   }
 
   function bindSelectionZone() {
-    document.getElementById('zoneCommune').addEventListener('change', () => {
-      peuplerDatalistZones();
-    });
+    document.getElementById('zoneCommune').addEventListener('change', peuplerDatalistZones);
     document.getElementById('zoneNom').addEventListener('change', (e) => {
       const zoneCorrespondante = zonesEnCache.find((z) => z.nom === e.target.value);
       if (!zoneCorrespondante) return;
