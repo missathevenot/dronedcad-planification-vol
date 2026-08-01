@@ -48,6 +48,7 @@ const App = (() => {
     bindSuivi();
     bindFiltresSuivi();
     bindSelectionZone();
+    bindEnregistrerSupprimerZone();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -662,6 +663,87 @@ const App = (() => {
     document.getElementById('zoneDescription').value = zone.description || '';
     if (zone.commune) document.getElementById('zoneCommune').value = zone.commune;
     if (zone.geometrie && zone.geometrie.length >= 3) Carto.setZone(zone.geometrie);
+  }
+
+  function bindEnregistrerSupprimerZone() {
+    document.getElementById('btnEnregistrerZone').addEventListener('click', enregistrerZone);
+    document.getElementById('btnSupprimerZone').addEventListener('click', supprimerZoneActuelle);
+  }
+
+  async function enregistrerZone() {
+    const zone = Carto.getZone();
+    if (zone.length < 3) {
+      Utils.toast('Dessinez une zone avant de l\'enregistrer.', 'warning');
+      return;
+    }
+    const nom = document.getElementById('zoneNom').value.trim();
+    if (!nom) {
+      Utils.toast('Donnez un nom à la zone avant de l\'enregistrer.', 'warning');
+      return;
+    }
+    const session = await Suivi.sessionActuelle();
+    if (!session) {
+      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant d\'enregistrer une zone.', 'warning');
+      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
+      return;
+    }
+    const btn = document.getElementById('btnEnregistrerZone');
+    btn.disabled = true;
+    try {
+      const donnees = {
+        nom,
+        commune: document.getElementById('zoneCommune').value.trim(),
+        description: document.getElementById('zoneDescription').value,
+        geometrie: zone
+      };
+      // Match volontairement par nom courant (pas par state.zone.id) : si l'utilisateur a
+      // chargé une zone puis tape un nom différent avant d'enregistrer, cela crée une
+      // nouvelle zone plutôt que de renommer/écraser silencieusement celle qui était
+      // chargée — plus sûr pour une bibliothèque partagée entre plusieurs agents, au prix
+      // de ne pas permettre de renommer une zone existante en un seul clic (il faudrait la
+      // supprimer et l'enregistrer à nouveau sous le nouveau nom).
+      const zoneCorrespondante = zonesEnCache.find((z) => z.nom === nom);
+      const zoneEnregistree = zoneCorrespondante
+        ? await Zones.mettreAJourZone(zoneCorrespondante.id, donnees)
+        : await Zones.creerZone(donnees);
+      state.zone = { id: zoneEnregistree.id, nom: zoneEnregistree.nom, commune: zoneEnregistree.commune, description: zoneEnregistree.description };
+      zonesEnCache = await Zones.listerZones();
+      peuplerCommunes();
+      peuplerDatalistZones();
+      Utils.toast('Zone enregistrée.', 'success');
+    } catch (err) {
+      Utils.toast(`Échec de l'enregistrement de la zone : ${err.message}`, 'danger');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function supprimerZoneActuelle() {
+    if (!state.zone.id) {
+      Utils.toast('Aucune zone de la bibliothèque n\'est chargée.', 'warning');
+      return;
+    }
+    const session = await Suivi.sessionActuelle();
+    if (!session) {
+      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant de supprimer une zone.', 'warning');
+      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
+      return;
+    }
+    const btn = document.getElementById('btnSupprimerZone');
+    btn.disabled = true;
+    try {
+      await Zones.supprimerZone(state.zone.id);
+      state.zone = { id: null, nom: '', commune: '', description: '' };
+      document.getElementById('zoneNom').value = '';
+      document.getElementById('zoneDescription').value = '';
+      zonesEnCache = await Zones.listerZones();
+      peuplerCommunes();
+      peuplerDatalistZones();
+      Utils.toast('Zone supprimée.', 'success');
+    } catch (err) {
+      Utils.toast(`Échec de la suppression de la zone : ${err.message}`, 'danger');
+      btn.disabled = false;
+    }
   }
 
   async function afficherListeSuivi() {
