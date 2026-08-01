@@ -44,6 +44,7 @@ const App = (() => {
     bindMeteo();
     bindEnvoiVersSuivi();
     bindSuivi();
+    bindFiltresSuivi();
     initCharts();
 
     Carto.on('zoneChanged', () => recalculer());
@@ -599,6 +600,63 @@ const App = (() => {
     document.getElementById('suiviUtilisateurConnecte').textContent =
       profil ? `Connecté : ${profil.nomComplet} (${profil.role})` : 'Connecté';
     await afficherListeSuivi();
+  }
+
+  const LIBELLES_STATUT_DOSSIER = { planifiee: 'Planifiée', en_cours: 'En cours', terminee: 'Terminée' };
+  const BADGE_STATUT_DOSSIER = { planifiee: 'muted', en_cours: 'warning', terminee: 'success' };
+
+  function bindFiltresSuivi() {
+    document.getElementById('suiviFiltreStatut').addEventListener('change', afficherListeSuivi);
+    document.getElementById('suiviFiltreCommune').addEventListener('input', Utils.debounce(afficherListeSuivi, 300));
+  }
+
+  async function afficherListeSuivi() {
+    document.getElementById('suiviDetailHost').classList.add('is-hidden');
+    document.getElementById('suiviListeHost').classList.remove('is-hidden');
+    await Promise.all([majTableauDeBordSuivi(), rafraichirListeDossiers()]);
+  }
+
+  async function majTableauDeBordSuivi() {
+    try {
+      const stats = await Suivi.recupererTableauDeBord();
+      document.getElementById('suiviStatTotal').textContent = stats.total;
+      document.getElementById('suiviStatTermines').textContent = stats.termines;
+      document.getElementById('suiviStatEnCours').textContent = stats.enCours;
+      document.getElementById('suiviStatIncidents').textContent = stats.incidents;
+      document.getElementById('suiviStatVolumetrie').textContent = Utils.fmtBytes(stats.volumetrieTotaleMo * 1024 * 1024);
+    } catch (err) {
+      Utils.toast(`Échec du chargement du tableau de bord : ${err.message}`, 'danger');
+    }
+  }
+
+  async function rafraichirListeDossiers() {
+    const hote = document.getElementById('suiviListeDossiers');
+    try {
+      const filtres = {
+        statut: document.getElementById('suiviFiltreStatut').value,
+        commune: document.getElementById('suiviFiltreCommune').value.trim()
+      };
+      const dossiers = await Suivi.listerDossiers(filtres);
+      if (dossiers.length === 0) {
+        hote.innerHTML = '<p class="hint">Aucun dossier pour ces filtres.</p>';
+        return;
+      }
+      hote.innerHTML = dossiers.map((d) => `
+        <div class="suivi-carte-dossier" data-id="${d.id}">
+          <div class="suivi-carte-dossier__ligne1">
+            <span class="suivi-carte-dossier__titre">${d.nomZone}</span>
+            <span class="badge badge--${BADGE_STATUT_DOSSIER[d.statutGlobal]}">${LIBELLES_STATUT_DOSSIER[d.statutGlobal]}</span>
+          </div>
+          <div class="suivi-carte-dossier__meta">${d.commune || 'Commune non renseignée'} · ${d.datePlanification} · ${d.superficieHa} ha</div>
+        </div>
+      `).join('');
+      hote.querySelectorAll('.suivi-carte-dossier').forEach((carte) => {
+        carte.addEventListener('click', () => afficherDetailSuivi(carte.dataset.id));
+      });
+    } catch (err) {
+      hote.innerHTML = '';
+      Utils.toast(`Échec du chargement des dossiers : ${err.message}`, 'danger');
+    }
   }
 
   function majTableauMissions(missions) {
