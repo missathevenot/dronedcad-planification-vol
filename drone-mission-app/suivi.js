@@ -136,7 +136,10 @@ const Suivi = (() => {
 
   let client = null;
 
-  /** Initialise (une seule fois) et retourne le client Supabase. */
+  /** Initialise (une seule fois) et retourne le client Supabase. Exportée pour être
+   * partagée avec les autres modules (ex. zones.js), afin de garantir une seule
+   * instance de client Supabase plutôt que d'en recréer une seconde avec les mêmes
+   * identifiants. */
   function initClient() {
     if (!client) client = window.supabase.createClient(DEFAULTS.supabaseUrl, DEFAULTS.supabaseAnonKey);
     return client;
