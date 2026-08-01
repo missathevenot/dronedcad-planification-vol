@@ -49,7 +49,7 @@ Réutilise la fonction `public.est_agent_actif()` déjà créée pour corriger l
 
 Nouveau fichier `drone-mission-app/zones.js`, module IIFE `Zones`, même pattern que `suivi.js`. Réutilise le même projet Supabase (même URL, même clé publique) que `suivi.js` — pas de second projet. `Suivi.initClient()` est aujourd'hui une fonction interne non exportée (choix délibéré du module Suivi) ; cette tranche l'ajoute à l'objet exporté de `suivi.js` (simple extension de la liste d'export, aucun changement de comportement) afin que `zones.js` puisse réutiliser la même instance de client Supabase plutôt que d'en recréer une seconde avec les mêmes identifiants codés en dur à deux endroits :
 - `listerZones()` : retourne toutes les zones (pour peupler la liste déroulante et la commune).
-- `recupererZone(id)`, `creerZone(donnees)`, `mettreAJourZone(id, donnees)`, `supprimerZone(id)`.
+- `creerZone(donnees)`, `mettreAJourZone(id, donnees)`, `supprimerZone(id)` (pas de `recupererZone(id)` séparé : la liste complète, chargée une fois à l'ouverture de l'onglet via `listerZones()`, est conservée côté client et la zone choisie y est retrouvée par nom — évite un aller-retour réseau supplémentaire à chaque sélection).
 - Fonction pure `mapperZoneVersJs(row)` (mapping snake_case → camelCase, testable).
 - Fonction pure `communesDistinctes(zones)` (liste triée des communes non vides présentes parmi les zones, testable).
 
