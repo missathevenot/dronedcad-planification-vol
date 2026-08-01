@@ -73,7 +73,12 @@ const Zones = (() => {
     if (donnees.description !== undefined) patch.description = donnees.description;
     if (donnees.geometrie !== undefined) patch.geometrie = donnees.geometrie;
     const { data, error } = await sb.from('zones').update(patch).eq('id', id).select().single();
-    if (error) throw new Error(`Échec de la mise à jour de la zone : ${error.message}`);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error('Cette zone n\'existe plus (elle a peut-être été supprimée par un autre agent).');
+      }
+      throw new Error(`Échec de la mise à jour de la zone : ${error.message}`);
+    }
     return mapperZoneVersJs(data);
   }
 
