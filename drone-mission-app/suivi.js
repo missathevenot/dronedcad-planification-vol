@@ -307,6 +307,7 @@ const Suivi = (() => {
     let requete = sb.from('missions_suivi').select('*').order('created_at', { ascending: false });
     if (filtres.statut) requete = requete.eq('statut_global', filtres.statut);
     if (filtres.commune) requete = requete.ilike('commune', `%${filtres.commune}%`);
+    if (filtres.zoneId) requete = requete.eq('zone_id', filtres.zoneId);
     const { data, error } = await requete;
     if (error) throw new Error(`Échec du chargement des dossiers : ${error.message}`);
     return data.map(mapperDossierVersJs);

@@ -554,7 +554,6 @@ const App = (() => {
   function bindSuivi() {
     document.getElementById('btnSuiviConnexion').addEventListener('click', connecterSuivi);
     document.getElementById('btnSuiviDeconnexion').addEventListener('click', deconnecterSuivi);
-    document.getElementById('btnSuiviRetourListe')?.addEventListener('click', afficherListeSuivi);
   }
 
   async function initialiserOngletSuivi() {
@@ -600,6 +599,11 @@ const App = (() => {
       document.getElementById('suiviMotDePasse').value = '';
       document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
       document.getElementById('suiviContenuHost').classList.add('is-hidden');
+      document.getElementById('suiviZoneCommune').value = '';
+      document.getElementById('suiviZoneNom').value = '';
+      document.getElementById('suiviDossierSelecteurHost').classList.add('is-hidden');
+      document.getElementById('suiviZoneAucunDossier').classList.add('is-hidden');
+      document.getElementById('suiviDetailHost').classList.add('is-hidden');
     } finally {
       btn.disabled = false;
     }
@@ -611,15 +615,61 @@ const App = (() => {
     const profil = await Suivi.profilConnecte();
     document.getElementById('suiviUtilisateurConnecte').textContent =
       profil ? `Connecté : ${profil.nomComplet} (${profil.role})` : 'Connecté';
-    await afficherListeSuivi();
+    peuplerCommunesSuivi();
+    peuplerDatalistZonesSuivi();
   }
 
   const LIBELLES_STATUT_DOSSIER = { planifiee: 'Planifiée', en_cours: 'En cours', terminee: 'Terminée' };
   const BADGE_STATUT_DOSSIER = { planifiee: 'muted', en_cours: 'warning', terminee: 'success' };
 
   function bindFiltresSuivi() {
-    document.getElementById('suiviFiltreStatut').addEventListener('change', afficherListeSuivi);
-    document.getElementById('suiviFiltreCommune').addEventListener('input', Utils.debounce(afficherListeSuivi, 300));
+    document.getElementById('suiviZoneCommune').addEventListener('change', peuplerDatalistZonesSuivi);
+    document.getElementById('suiviZoneNom').addEventListener('change', async (e) => {
+      const zoneCorrespondante = zonesEnCache.find((z) => z.nom === e.target.value);
+      if (!zoneCorrespondante) return;
+      await chargerDossiersDeZoneSuivi(zoneCorrespondante.id);
+    });
+    document.getElementById('suiviDossierSelecteur').addEventListener('change', (e) => {
+      if (e.target.value) afficherDetailSuivi(e.target.value);
+    });
+  }
+
+  function peuplerDatalistZonesSuivi() {
+    const communeFiltre = document.getElementById('suiviZoneCommune').value.trim();
+    const zonesFiltrees = communeFiltre ? zonesEnCache.filter((z) => z.commune === communeFiltre) : zonesEnCache;
+    document.getElementById('suiviZonesDatalist').innerHTML =
+      zonesFiltrees.map((z) => `<option value="${Utils.escapeHtml(z.nom)}"></option>`).join('');
+  }
+
+  function peuplerCommunesSuivi() {
+    const communes = Zones.communesDistinctes(zonesEnCache);
+    document.getElementById('suiviCommunesDatalist').innerHTML =
+      communes.map((c) => `<option value="${Utils.escapeHtml(c)}"></option>`).join('');
+  }
+
+  async function chargerDossiersDeZoneSuivi(zoneId) {
+    document.getElementById('suiviDetailHost').classList.add('is-hidden');
+    const selecteurHost = document.getElementById('suiviDossierSelecteurHost');
+    const selecteur = document.getElementById('suiviDossierSelecteur');
+    const aucunMsg = document.getElementById('suiviZoneAucunDossier');
+    selecteurHost.classList.add('is-hidden');
+    aucunMsg.classList.add('is-hidden');
+    try {
+      const dossiers = await Suivi.listerDossiers({ zoneId });
+      if (dossiers.length === 0) {
+        aucunMsg.classList.remove('is-hidden');
+        return;
+      }
+      if (dossiers.length === 1) {
+        await afficherDetailSuivi(dossiers[0].id);
+        return;
+      }
+      selecteur.innerHTML = '<option value="">Choisir…</option>' +
+        dossiers.map((d) => `<option value="${d.id}">${d.datePlanification} — ${LIBELLES_STATUT_DOSSIER[d.statutGlobal] || d.statutGlobal}</option>`).join('');
+      selecteurHost.classList.remove('is-hidden');
+    } catch (err) {
+      Utils.toast(`Échec du chargement des dossiers de la zone : ${err.message}`, 'danger');
+    }
   }
 
   // ------------------------------------------------------------------
@@ -750,66 +800,6 @@ const App = (() => {
     }
   }
 
-  async function afficherListeSuivi() {
-    suiviSousOngletActif = 'execution';
-    document.getElementById('suiviDetailHost').classList.add('is-hidden');
-    document.getElementById('suiviListeHost').classList.remove('is-hidden');
-    await Promise.all([majTableauDeBordSuivi(), rafraichirListeDossiers()]);
-  }
-
-  async function majTableauDeBordSuivi() {
-    const requeteId = ++suiviTableauDeBordRequeteEnCours;
-    try {
-      const stats = await Suivi.recupererTableauDeBord();
-      if (requeteId !== suiviTableauDeBordRequeteEnCours) return;
-      document.getElementById('suiviStatTotal').textContent = stats.total;
-      document.getElementById('suiviStatTermines').textContent = stats.termines;
-      document.getElementById('suiviStatEnCours').textContent = stats.enCours;
-      document.getElementById('suiviStatIncidents').textContent = stats.incidents;
-      document.getElementById('suiviStatVolumetrie').textContent = Utils.fmtBytes(stats.volumetrieTotaleMo * 1024 * 1024);
-    } catch (err) {
-      if (requeteId !== suiviTableauDeBordRequeteEnCours) return;
-      Utils.toast(`Échec du chargement du tableau de bord : ${err.message}`, 'danger');
-    }
-  }
-
-  async function rafraichirListeDossiers() {
-    const requeteId = ++suiviListeRequeteEnCours;
-    const hote = document.getElementById('suiviListeDossiers');
-    try {
-      const filtres = {
-        statut: document.getElementById('suiviFiltreStatut').value,
-        commune: document.getElementById('suiviFiltreCommune').value.trim()
-      };
-      const dossiers = await Suivi.listerDossiers(filtres);
-      if (requeteId !== suiviListeRequeteEnCours) return;
-      if (dossiers.length === 0) {
-        hote.innerHTML = '<p class="hint">Aucun dossier pour ces filtres.</p>';
-        return;
-      }
-      hote.innerHTML = dossiers.map((d) => {
-        const statutBadge = BADGE_STATUT_DOSSIER[d.statutGlobal] || 'muted';
-        const statutLabel = LIBELLES_STATUT_DOSSIER[d.statutGlobal] || d.statutGlobal;
-        return `
-        <div class="suivi-carte-dossier" data-id="${d.id}">
-          <div class="suivi-carte-dossier__ligne1">
-            <span class="suivi-carte-dossier__titre">${Utils.escapeHtml(d.nomZone)}</span>
-            <span class="badge badge--${statutBadge}">${statutLabel}</span>
-          </div>
-          <div class="suivi-carte-dossier__meta">${Utils.escapeHtml(d.commune) || 'Commune non renseignée'} · ${d.datePlanification} · ${d.superficieHa} ha</div>
-        </div>
-      `;
-      }).join('');
-      hote.querySelectorAll('.suivi-carte-dossier').forEach((carte) => {
-        carte.addEventListener('click', () => afficherDetailSuivi(carte.dataset.id));
-      });
-    } catch (err) {
-      if (requeteId !== suiviListeRequeteEnCours) return;
-      hote.innerHTML = '';
-      Utils.toast(`Échec du chargement des dossiers : ${err.message}`, 'danger');
-    }
-  }
-
   const LIBELLES_STATUT_VOL = { planifiee: 'Planifiée', executee: 'Exécutée', reportee: 'Reportée', incident: 'Incident', annulee: 'Annulée' };
   const BADGE_STATUT_VOL = { planifiee: 'muted', executee: 'success', reportee: 'warning', incident: 'danger', annulee: 'danger' };
   const LIBELLES_ETAPE = {
@@ -840,7 +830,6 @@ const App = (() => {
   }
 
   async function afficherDetailSuivi(id) {
-    document.getElementById('suiviListeHost').classList.add('is-hidden');
     const hote = document.getElementById('suiviDetailHost');
     hote.classList.remove('is-hidden');
     try {
@@ -848,7 +837,6 @@ const App = (() => {
       majAffichageDetailSuivi();
     } catch (err) {
       hote.classList.add('is-hidden');
-      document.getElementById('suiviListeHost').classList.remove('is-hidden');
       Utils.toast(`Échec du chargement du dossier : ${err.message}`, 'danger');
     }
   }
@@ -859,7 +847,6 @@ const App = (() => {
 
     document.getElementById('suiviDetailHost').innerHTML = `
       <div class="panel-box">
-        <button id="btnSuiviRetourListe" class="btn btn--ghost">← Retour à la liste</button>
         <h3 id="suiviDetailTitre">${Utils.escapeHtml(dossier.nomZone)}</h3>
         <div id="suiviDetailInfos" class="kv-list">
           <div><span>Commune</span><b>${Utils.escapeHtml(dossier.commune) || '—'}</b></div>
@@ -882,7 +869,6 @@ const App = (() => {
       <div id="suiviSousOngletQualite" class="suivi-sous-panel${suiviSousOngletActif === 'qualite' ? '' : ' is-hidden'}">${rendreCartesQualite(controles)}</div>
     `;
 
-    document.getElementById('btnSuiviRetourListe').addEventListener('click', afficherListeSuivi);
     bindSousOngletsSuivi();
     bindFormulairesDetailSuivi();
   }
