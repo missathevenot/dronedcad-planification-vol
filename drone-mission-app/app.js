@@ -1310,6 +1310,92 @@ const App = (() => {
     }
   }
 
+  let changementGeometrieEnAttente = null;
+
+  async function chargerListeEtCarteChangements(dossierId, zoneId, hoteListe) {
+    try {
+      const changements = await Suivi.listerChangements(dossierId);
+      CartoChangements.initMap('changementsCarte');
+      CartoChangements.afficherChangements(changements);
+      CartoChangements.invalidateSize();
+      renderListeChangements(hoteListe, changements);
+      await chargerDossiersReferencePourChangements(zoneId, dossierId);
+      bindFormulaireChangements(dossierId, zoneId, hoteListe, changements);
+    } catch (err) {
+      hoteListe.innerHTML = `<h3>Changements enregistrés</h3><p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
+      Utils.toast(`Échec du chargement des changements : ${err.message}`, 'danger');
+    }
+  }
+
+  function bindFormulaireChangements(dossierId, zoneId, hoteListe, changementsActuels) {
+    const btnDessiner = document.getElementById('btnChangementsDessiner');
+    const formulaireHost = document.getElementById('changementsFormulaireHost');
+    const btnEnregistrer = document.getElementById('btnChangementsEnregistrer');
+    const btnAnnuler = document.getElementById('btnChangementsAnnuler');
+    const btnRapport = document.getElementById('btnChangementsRapport');
+    if (!btnDessiner) return;
+
+    changementGeometrieEnAttente = null;
+    formulaireHost.classList.add('is-hidden');
+
+    CartoChangements.on('polygoneTermine', (points) => {
+      changementGeometrieEnAttente = points;
+      formulaireHost.classList.remove('is-hidden');
+    });
+
+    btnDessiner.addEventListener('click', () => {
+      formulaireHost.classList.add('is-hidden');
+      changementGeometrieEnAttente = null;
+      CartoChangements.startDraw();
+      Utils.toast('Cliquez sur la carte pour placer les sommets du polygone, double-cliquez pour terminer.', 'info');
+    });
+
+    btnAnnuler.addEventListener('click', () => {
+      CartoChangements.stopDraw();
+      changementGeometrieEnAttente = null;
+      formulaireHost.classList.add('is-hidden');
+    });
+
+    btnEnregistrer.addEventListener('click', async () => {
+      if (!changementGeometrieEnAttente || changementGeometrieEnAttente.length < 3) {
+        Utils.toast('Dessinez un polygone avant d\'enregistrer.', 'warning');
+        return;
+      }
+      btnEnregistrer.disabled = true;
+      try {
+        await Suivi.enregistrerChangement(dossierId, {
+          dossierReferenceId: document.getElementById('changementsDossierReference').value || null,
+          type: document.getElementById('changementsNouveauType').value,
+          priorite: document.getElementById('changementsNouvellePriorite').value,
+          description: document.getElementById('changementsNouvelleDescription').value.trim(),
+          geometrie: changementGeometrieEnAttente
+        });
+        Utils.toast('Changement enregistré.', 'success');
+        changementGeometrieEnAttente = null;
+        await chargerListeEtCarteChangements(dossierId, zoneId, hoteListe);
+      } catch (err) {
+        Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+        btnEnregistrer.disabled = false;
+      }
+    });
+
+    if (btnRapport) {
+      btnRapport.addEventListener('click', async () => {
+        btnRapport.disabled = true;
+        try {
+          const select = document.getElementById('changementsDossierReference');
+          const nomReference = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : null;
+          const stats = Suivi.calculerStatsChangements(changementsActuels);
+          Exporter.exportRapportChangements(suiviDossierActuel.dossier, changementsActuels, nomReference, stats);
+        } catch (err) {
+          Utils.toast(`Échec de la génération du rapport : ${err.message}`, 'danger');
+        } finally {
+          btnRapport.disabled = false;
+        }
+      });
+    }
+  }
+
   function bindFormulairesDetailSuivi() {
     document.querySelectorAll('[data-execution-id]').forEach((carte) => {
       const btn = carte.querySelector('.suivi-vol-enregistrer');
