@@ -487,6 +487,49 @@ const Suivi = (() => {
     if (error) throw new Error(`Échec de l'enregistrement de la couverture réelle : ${error.message}`);
   }
 
+  /** Téléverse un fichier lié à une ligne (execution_vol, etape_traitement ou controle_qualite) et enregistre sa référence. */
+  async function uploaderPieceJointe(tableLiee, ligneId, fichier, typeFichier) {
+    const sb = initClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const chemin = `${tableLiee}/${ligneId}/${Date.now()}_${fichier.name}`;
+    const { error: erreurUpload } = await sb.storage.from('suivi-pieces-jointes').upload(chemin, fichier);
+    if (erreurUpload) throw new Error(`Échec du téléversement : ${erreurUpload.message}`);
+    const ligne = {
+      table_liee: tableLiee,
+      ligne_id: ligneId,
+      type_fichier: typeFichier,
+      chemin_storage: chemin,
+      nom_original: fichier.name,
+      uploaded_by: user ? user.id : null
+    };
+    const { data, error } = await sb.from('pieces_jointes').insert(ligne).select().single();
+    if (error) throw new Error(`Fichier téléversé mais échec de l'enregistrement de la référence : ${error.message}`);
+    return mapperPieceJointeVersJs(data);
+  }
+
+  /** Liste les pièces jointes d'une ligne donnée. */
+  async function listerPiecesJointes(tableLiee, ligneId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('pieces_jointes').select('*').eq('table_liee', tableLiee).eq('ligne_id', ligneId).order('uploaded_at', { ascending: false });
+    if (error) throw new Error(`Échec du chargement des pièces jointes : ${error.message}`);
+    return data.map(mapperPieceJointeVersJs);
+  }
+
+  /** Retourne une URL signée temporaire (1h) pour télécharger une pièce jointe. */
+  async function obtenirUrlSigneePieceJointe(cheminStorage) {
+    const sb = initClient();
+    const { data, error } = await sb.storage.from('suivi-pieces-jointes').createSignedUrl(cheminStorage, 3600);
+    if (error) throw new Error(`Échec de la génération du lien de téléchargement : ${error.message}`);
+    return data.signedUrl;
+  }
+
+  /** Supprime une pièce jointe (référence en base ; le fichier Storage n'est pas nettoyé dans cette tranche). */
+  async function supprimerPieceJointe(id) {
+    const sb = initClient();
+    const { error } = await sb.from('pieces_jointes').delete().eq('id', id);
+    if (error) throw new Error(`Échec de la suppression : ${error.message}`);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -498,7 +541,8 @@ const Suivi = (() => {
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord,
     listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe,
     listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation,
-    listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle
+    listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle,
+    uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe
   };
 })();
 
