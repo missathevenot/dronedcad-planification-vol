@@ -29,6 +29,7 @@ const App = (() => {
   let meteoRequeteEnCours = 0;
   let suiviListeRequeteEnCours = 0;
   let suiviTableauDeBordRequeteEnCours = 0;
+  let suiviZoneRequeteEnCours = 0;
   let scenarios = [];
   const charts = {};
 
@@ -648,6 +649,8 @@ const App = (() => {
   }
 
   async function chargerDossiersDeZoneSuivi(zoneId) {
+    suiviSousOngletActif = 'execution';
+    const requeteId = ++suiviZoneRequeteEnCours;
     document.getElementById('suiviDetailHost').classList.add('is-hidden');
     const selecteurHost = document.getElementById('suiviDossierSelecteurHost');
     const selecteur = document.getElementById('suiviDossierSelecteur');
@@ -656,6 +659,7 @@ const App = (() => {
     aucunMsg.classList.add('is-hidden');
     try {
       const dossiers = await Suivi.listerDossiers({ zoneId });
+      if (requeteId !== suiviZoneRequeteEnCours) return;
       if (dossiers.length === 0) {
         aucunMsg.classList.remove('is-hidden');
         return;
@@ -668,6 +672,7 @@ const App = (() => {
         dossiers.map((d) => `<option value="${d.id}">${d.datePlanification} — ${LIBELLES_STATUT_DOSSIER[d.statutGlobal] || d.statutGlobal}</option>`).join('');
       selecteurHost.classList.remove('is-hidden');
     } catch (err) {
+      if (requeteId !== suiviZoneRequeteEnCours) return;
       Utils.toast(`Échec du chargement des dossiers de la zone : ${err.message}`, 'danger');
     }
   }
