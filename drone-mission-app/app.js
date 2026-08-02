@@ -1097,7 +1097,7 @@ const App = (() => {
         }
       });
     } catch (err) {
-      hote.innerHTML = `<p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
+      hote.innerHTML = `<p class="hint">Échec du chargement des anomalies et corrections : ${Utils.escapeHtml(err.message)}</p>`;
     }
   }
 
@@ -1130,7 +1130,7 @@ const App = (() => {
 
   function rendreCartesQualite(controles) {
     const historique = controles.length === 0 ? '<p class="hint">Aucun contrôle enregistré.</p>' : controles.map((c) => `
-      <div class="suivi-tache-carte" data-controle-id="${c.id}">
+      <div class="suivi-tache-carte">
         <div class="suivi-tache-carte__entete">
           <b>${LIBELLES_LIVRABLE[c.livrable]}</b>
           <span class="badge badge--${BADGE_RESULTAT_QUALITE[c.resultat]}">${LIBELLES_RESULTAT_QUALITE[c.resultat]}</span>
