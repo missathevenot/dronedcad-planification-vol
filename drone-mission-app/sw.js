@@ -12,7 +12,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'drones-dcad-v3';
+const CACHE_VERSION = 'drones-dcad-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const APP_SHELL = [
   './utils.js',
   './calculs.js',
   './cartographie.js',
+  './carto-changements.js',
   './logo-dgi.js',
   './export.js',
   './app.js',
