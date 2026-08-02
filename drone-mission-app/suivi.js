@@ -535,6 +535,56 @@ const Suivi = (() => {
     if (error) throw new Error(`Échec de la suppression de la pièce jointe : ${error.message}`);
   }
 
+  /** Liste les anomalies signalées pour un contrôle qualité. */
+  async function listerAnomaliesQualite(controleId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('registre_anomalies_qualite').select('*').eq('controle_id', controleId).order('date_signalement', { ascending: false });
+    if (error) throw new Error(`Échec du chargement des anomalies : ${error.message}`);
+    return data.map(mapperAnomalieVersJs);
+  }
+
+  /** Signale une nouvelle anomalie pour un contrôle qualité. */
+  async function signalerAnomalieQualite(controleId, description) {
+    const sb = initClient();
+    const ligne = {
+      controle_id: controleId,
+      description
+    };
+    const { data, error } = await sb.from('registre_anomalies_qualite').insert(ligne).select().single();
+    if (error) throw new Error(`Échec du signalement de l'anomalie : ${error.message}`);
+    return mapperAnomalieVersJs(data);
+  }
+
+  /** Marque une anomalie comme corrigée. */
+  async function mettreAJourAnomalieQualite(id, statut) {
+    const sb = initClient();
+    const { data, error } = await sb.from('registre_anomalies_qualite').update({ statut }).eq('id', id).select().single();
+    if (error) throw new Error(`Échec de la mise à jour de l'anomalie : ${error.message}`);
+    return mapperAnomalieVersJs(data);
+  }
+
+  /** Liste l'historique des corrections apportées pour un contrôle qualité. */
+  async function listerCorrections(controleId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('historique_corrections').select('*').eq('controle_id', controleId).order('date_correction', { ascending: false });
+    if (error) throw new Error(`Échec du chargement de l'historique des corrections : ${error.message}`);
+    return data.map(mapperCorrectionVersJs);
+  }
+
+  /** Enregistre une correction apportée suite à une anomalie. */
+  async function enregistrerCorrection(controleId, description) {
+    const sb = initClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const ligne = {
+      controle_id: controleId,
+      description,
+      corrige_par: user ? user.id : null
+    };
+    const { data, error } = await sb.from('historique_corrections').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de l'enregistrement de la correction : ${error.message}`);
+    return mapperCorrectionVersJs(data);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -547,7 +597,9 @@ const Suivi = (() => {
     listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe,
     listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation,
     listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle,
-    uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe
+    uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe,
+    listerAnomaliesQualite, signalerAnomalieQualite, mettreAJourAnomalieQualite,
+    listerCorrections, enregistrerCorrection
   };
 })();
 
