@@ -59,9 +59,8 @@ input,select{font-family:var(--font-mono);}
 }
 .brand{display:flex; align-items:center; gap:10px; padding:4px 4px 14px; border-bottom:1px solid var(--line);}
 .brand__mark{
-  width:40px; height:40px; border-radius:9px; background:linear-gradient(135deg, var(--amber), #C9791E);
-  color:#1A1204; font-weight:800; font-family:var(--font-mono); font-size:.72rem;
-  display:flex; align-items:center; justify-content:center; letter-spacing:.5px;
+  width:40px; height:40px; border-radius:9px; background:#fff; padding:3px;
+  object-fit:contain; flex-shrink:0;
 }
 .brand__text{display:flex; flex-direction:column; line-height:1.25;}
 .brand__text strong{font-size:.95rem;}
@@ -95,11 +94,6 @@ input,select{font-family:var(--font-mono);}
 }
 .topbar__title h1{font-size:1.05rem;}
 .topbar__title p{font-size:.78rem; color:var(--muted); margin-top:2px;}
-.topbar__brand{
-  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
-  display:flex; align-items:center; justify-content:center; pointer-events:none;
-}
-.topbar__logo{height:44px; width:auto; display:block; border-radius:6px; background:#fff; padding:2px 6px;}
 .topbar__actions{margin-left:auto;}
 .only-mobile{display:none;}
 
@@ -264,5 +258,4 @@ input,select{font-family:var(--font-mono);}
   .cards-grid{grid-template-columns:1fr 1fr;}
   .panel{padding:16px;}
   .topbar{padding:12px 16px;}
-  .topbar__brand{display:none;}
 }

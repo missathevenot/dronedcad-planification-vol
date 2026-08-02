@@ -12,7 +12,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'drones-dcad-v4';
+const CACHE_VERSION = 'drones-dcad-v5';
 const APP_SHELL = [
   './',
   './index.html',
@@ -42,7 +42,7 @@ const APP_SHELL = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './icons/dgi-logo.png'
+  './icons/dgi-logo.jpg'
 ];
 
 self.addEventListener('install', (event) => {
