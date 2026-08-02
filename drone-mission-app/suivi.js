@@ -633,6 +633,39 @@ const Suivi = (() => {
     return mapperCorrectionVersJs(data);
   }
 
+  /** Liste les changements territoriaux enregistrés pour un dossier. */
+  async function listerChangements(missionSuiviId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('changements_territoriaux').select('*').eq('mission_suivi_id', missionSuiviId).order('date_detection', { ascending: false });
+    if (error) throw new Error(`Échec du chargement des changements : ${error.message}`);
+    return data.map(mapperChangementVersJs);
+  }
+
+  /** Enregistre un nouveau changement territorial (polygone dessiné + catégorisation). */
+  async function enregistrerChangement(missionSuiviId, donnees) {
+    const sb = initClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const ligne = {
+      mission_suivi_id: missionSuiviId,
+      dossier_reference_id: donnees.dossierReferenceId || null,
+      type: donnees.type,
+      geometrie: donnees.geometrie,
+      priorite: donnees.priorite || 'moyenne',
+      description: donnees.description || '',
+      detecte_par: user ? user.id : null
+    };
+    const { data, error } = await sb.from('changements_territoriaux').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de l'enregistrement du changement : ${error.message}`);
+    return mapperChangementVersJs(data);
+  }
+
+  /** Supprime un changement territorial. */
+  async function supprimerChangement(id) {
+    const sb = initClient();
+    const { error } = await sb.from('changements_territoriaux').delete().eq('id', id);
+    if (error) throw new Error(`Échec de la suppression du changement : ${error.message}`);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -648,7 +681,8 @@ const Suivi = (() => {
     listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle,
     uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe,
     listerAnomaliesQualite, signalerAnomalieQualite, mettreAJourAnomalieQualite,
-    listerCorrections, enregistrerCorrection
+    listerCorrections, enregistrerCorrection,
+    listerChangements, enregistrerChangement, supprimerChangement
   };
 })();
 
