@@ -649,7 +649,7 @@ const App = (() => {
   }
 
   async function chargerDossiersDeZoneSuivi(zoneId) {
-    suiviSousOngletActif = 'execution';
+    suiviSousOngletActif = 'planification';
     const requeteId = ++suiviZoneRequeteEnCours;
     document.getElementById('suiviDetailHost').classList.add('is-hidden');
     const selecteurHost = document.getElementById('suiviDossierSelecteurHost');
@@ -818,7 +818,7 @@ const App = (() => {
   const BADGE_RESULTAT_QUALITE = { conforme: 'success', rejete: 'danger', a_reprendre: 'warning' };
 
   let suiviDossierActuel = null;
-  let suiviSousOngletActif = 'execution';
+  let suiviSousOngletActif = 'planification';
 
   function bindSousOngletsSuivi() {
     document.querySelectorAll('.suivi-sous-onglet').forEach((btn) => {
@@ -827,6 +827,7 @@ const App = (() => {
         btn.classList.add('is-active');
         const cible = btn.dataset.sousOnglet;
         suiviSousOngletActif = cible;
+        document.getElementById('suiviSousOngletPlanification').classList.toggle('is-hidden', cible !== 'planification');
         document.getElementById('suiviSousOngletExecution').classList.toggle('is-hidden', cible !== 'execution');
         document.getElementById('suiviSousOngletTraitement').classList.toggle('is-hidden', cible !== 'traitement');
         document.getElementById('suiviSousOngletQualite').classList.toggle('is-hidden', cible !== 'qualite');
@@ -847,7 +848,7 @@ const App = (() => {
   }
 
   function majAffichageDetailSuivi() {
-    const { dossier, executions, etapes, controles } = suiviDossierActuel;
+    const { dossier, executions, etapes, controles, equipe, autorisations } = suiviDossierActuel;
     const avancement = Suivi.calculerAvancementDossier(executions, etapes);
 
     document.getElementById('suiviDetailHost').innerHTML = `
@@ -863,12 +864,14 @@ const App = (() => {
 
       <div class="panel-box">
         <div class="btn-row">
-          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'execution' ? ' is-active' : ''}" data-sous-onglet="execution">Exécution des vols</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'planification' ? ' is-active' : ''}" data-sous-onglet="planification">Planification</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'execution' ? ' is-active' : ''}" data-sous-onglet="execution">Acquisition</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'traitement' ? ' is-active' : ''}" data-sous-onglet="traitement">Traitement</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'qualite' ? ' is-active' : ''}" data-sous-onglet="qualite">Contrôle qualité</button>
         </div>
       </div>
 
+      <div id="suiviSousOngletPlanification" class="suivi-sous-panel${suiviSousOngletActif === 'planification' ? '' : ' is-hidden'}">${rendreSousOngletPlanification(dossier, equipe, autorisations)}</div>
       <div id="suiviSousOngletExecution" class="suivi-sous-panel${suiviSousOngletActif === 'execution' ? '' : ' is-hidden'}">${rendreCartesExecutions(executions)}</div>
       <div id="suiviSousOngletTraitement" class="suivi-sous-panel${suiviSousOngletActif === 'traitement' ? '' : ' is-hidden'}">${rendreCartesEtapes(etapes)}</div>
       <div id="suiviSousOngletQualite" class="suivi-sous-panel${suiviSousOngletActif === 'qualite' ? '' : ' is-hidden'}">${rendreCartesQualite(controles)}</div>
@@ -963,6 +966,56 @@ const App = (() => {
     `;
   }
 
+  function rendreSousOngletPlanification(dossier, equipe, autorisations) {
+    const indicateurs = Suivi.calculerIndicateursCharge([dossier]);
+    return `
+      <div class="panel-box">
+        <h3 class="mt">Informations</h3>
+        <div class="kv-list">
+          <div><span>Drones affectés</span><b>${dossier.dronesAffectes.length ? dossier.dronesAffectes.map(Utils.escapeHtml).join(', ') : '—'}</b></div>
+          <div><span>Budget prévisionnel</span><b>${dossier.budgetPrevisionnelFcfa != null ? dossier.budgetPrevisionnelFcfa.toLocaleString('fr-FR') + ' FCFA' : '—'}</b></div>
+          <div><span>Missions actives</span><b>${indicateurs.missionsActives}</b></div>
+        </div>
+      </div>
+      <div class="panel-box">
+        <h3 class="mt">Équipe affectée</h3>
+        ${equipe.length === 0 ? '<p class="hint">Aucun agent affecté.</p>' : equipe.map((m) => `
+          <div class="suivi-tache-carte" data-membre-id="${m.id}">
+            <div class="suivi-tache-carte__entete"><b>${Utils.escapeHtml(m.roleSurMission) || 'Membre'}</b>
+              <button class="btn btn--ghost suivi-equipe-retirer">Retirer</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="panel-box">
+        <h3 class="mt">Autorisations à solliciter</h3>
+        ${autorisations.length === 0 ? '<p class="hint">Aucune autorisation enregistrée.</p>' : autorisations.map((a) => `
+          <div class="suivi-tache-carte" data-autorisation-id="${a.id}">
+            <div class="suivi-tache-carte__entete"><b>${Utils.escapeHtml(a.intitule)}</b>
+              <span class="badge badge--${a.statut === 'obtenue' ? 'success' : a.statut === 'refusee' ? 'danger' : 'muted'}">${a.statut}</span>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Statut</label>
+                <select class="suivi-autorisation-statut">
+                  <option value="a_solliciter" ${a.statut === 'a_solliciter' ? 'selected' : ''}>À solliciter</option>
+                  <option value="obtenue" ${a.statut === 'obtenue' ? 'selected' : ''}>Obtenue</option>
+                  <option value="refusee" ${a.statut === 'refusee' ? 'selected' : ''}>Refusée</option>
+                </select>
+              </div>
+              <div class="field"><label>Date d'obtention</label><input type="date" class="suivi-autorisation-date" value="${a.dateObtention || ''}"></div>
+            </div>
+            <button class="btn btn--accent suivi-autorisation-enregistrer">Enregistrer</button>
+          </div>
+        `).join('')}
+        <div class="suivi-tache-carte">
+          <b>Nouvelle autorisation</b>
+          <div class="field"><label>Intitulé</label><input type="text" id="suiviNouvelleAutorisationIntitule" placeholder="Ex : Autorisation ANAC"></div>
+          <button id="btnSuiviAjouterAutorisation" class="btn btn--accent">Ajouter</button>
+        </div>
+      </div>
+    `;
+  }
+
   function bindFormulairesDetailSuivi() {
     document.querySelectorAll('[data-execution-id]').forEach((carte) => {
       const btn = carte.querySelector('.suivi-vol-enregistrer');
@@ -1024,6 +1077,55 @@ const App = (() => {
         } catch (err) {
           Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
           btnQualite.disabled = false;
+        }
+      });
+    }
+
+    document.querySelectorAll('[data-membre-id]').forEach((carte) => {
+      carte.querySelector('.suivi-equipe-retirer').addEventListener('click', async () => {
+        try {
+          await Suivi.retirerMembreEquipe(carte.dataset.membreId);
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec du retrait : ${err.message}`, 'danger');
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-autorisation-id]').forEach((carte) => {
+      const btn = carte.querySelector('.suivi-autorisation-enregistrer');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          await Suivi.mettreAJourAutorisation(carte.dataset.autorisationId, {
+            statut: carte.querySelector('.suivi-autorisation-statut').value,
+            dateObtention: carte.querySelector('.suivi-autorisation-date').value || null
+          });
+          Utils.toast('Autorisation mise à jour.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    const btnAjouterAutorisation = document.getElementById('btnSuiviAjouterAutorisation');
+    if (btnAjouterAutorisation) {
+      btnAjouterAutorisation.addEventListener('click', async () => {
+        const intitule = document.getElementById('suiviNouvelleAutorisationIntitule').value.trim();
+        if (!intitule) {
+          Utils.toast('Donnez un intitulé à l\'autorisation.', 'warning');
+          return;
+        }
+        btnAjouterAutorisation.disabled = true;
+        try {
+          await Suivi.creerAutorisation(suiviDossierActuel.dossier.id, intitule);
+          Utils.toast('Autorisation ajoutée.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de l'ajout : ${err.message}`, 'danger');
+          btnAjouterAutorisation.disabled = false;
         }
       });
     }
