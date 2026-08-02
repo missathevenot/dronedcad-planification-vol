@@ -1010,6 +1010,7 @@ const App = (() => {
         } catch (err) {
           Utils.toast(`Échec du téléversement : ${err.message}`, 'danger');
           inputFichier.disabled = false;
+          inputFichier.value = '';
         }
       });
     } catch (err) {
