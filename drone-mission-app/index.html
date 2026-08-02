@@ -445,32 +445,23 @@
           </div>
         </div>
 
-        <div class="panel-box">
-          <h3>Tableau de bord opérationnel</h3>
-          <div class="cards-grid">
-            <div class="card"><span class="card__label">Dossiers</span><span class="card__value" id="suiviStatTotal">—</span></div>
-            <div class="card"><span class="card__label">Terminés</span><span class="card__value" id="suiviStatTermines">—</span></div>
-            <div class="card"><span class="card__label">En cours</span><span class="card__value" id="suiviStatEnCours">—</span></div>
-            <div class="card"><span class="card__label">Vols en incident</span><span class="card__value" id="suiviStatIncidents">—</span></div>
-            <div class="card"><span class="card__label">Volumétrie produite</span><span class="card__value" id="suiviStatVolumetrie">—</span></div>
+        <div id="suiviSelecteurHost" class="panel-box">
+          <h3>Zone suivie</h3>
+          <div class="field">
+            <label>Localité ou Commune</label>
+            <input type="text" id="suiviZoneCommune" list="suiviCommunesDatalist" placeholder="Ex : Yopougon">
+            <datalist id="suiviCommunesDatalist"></datalist>
           </div>
-        </div>
-
-        <div id="suiviListeHost" class="panel-box">
-          <h3>Dossiers de mission</h3>
-          <div class="field-row">
-            <div class="field">
-              <label>Statut</label>
-              <select id="suiviFiltreStatut">
-                <option value="">Tous</option>
-                <option value="planifiee">Planifiée</option>
-                <option value="en_cours">En cours</option>
-                <option value="terminee">Terminée</option>
-              </select>
-            </div>
-            <div class="field"><label>Commune</label><input type="text" id="suiviFiltreCommune" placeholder="Toutes"></div>
+          <div class="field">
+            <label>Zone</label>
+            <input type="text" id="suiviZoneNom" list="suiviZonesDatalist" placeholder="Choisir une zone">
+            <datalist id="suiviZonesDatalist"></datalist>
           </div>
-          <div id="suiviListeDossiers"></div>
+          <div id="suiviDossierSelecteurHost" class="field is-hidden">
+            <label>Dossier de suivi</label>
+            <select id="suiviDossierSelecteur"></select>
+          </div>
+          <p id="suiviZoneAucunDossier" class="hint is-hidden">Aucun dossier de suivi pour cette zone.</p>
         </div>
 
         <div id="suiviDetailHost" class="is-hidden"></div>
