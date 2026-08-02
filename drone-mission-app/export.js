@@ -49,6 +49,11 @@ const Exporter = (() => {
       ['Rapport de mission — Planification photogrammétrique drone'],
       ['Généré le', Utils.now()],
       [],
+      ['Zone'],
+      ['Nom', p.zone.nom || 'Non renseigné'],
+      ['Commune', p.zone.commune || 'Non renseignée'],
+      ['Description', p.zone.description || 'Non renseignée'],
+      [],
       ['Paramètres drone'],
       ['Modèle', p.drone.modele],
       ['Vitesse de cartographie (m/s)', p.vol.vitesse],
@@ -168,7 +173,13 @@ const Exporter = (() => {
     y += 22;
 
     doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
-    doc.text(`Zone : ${params.nomZone && params.nomZone.trim() ? params.nomZone.trim() : 'Non renseignée'}`, 40, y);
+    doc.text(`Zone : ${params.zone.nom && params.zone.nom.trim() ? params.zone.nom.trim() : 'Non renseignée'}`, 40, y);
+    y += 16;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(`Commune : ${params.zone.commune && params.zone.commune.trim() ? params.zone.commune.trim() : 'Non renseignée'}`, 40, y);
+    y += 13;
+    doc.text(`Description : ${params.zone.description && params.zone.description.trim() ? params.zone.description.trim() : 'Non renseignée'}`, 40, y);
     y += 16;
 
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
