@@ -391,6 +391,73 @@ const Suivi = (() => {
     return calculerStatsTableauDeBord(dossiersEnrichis);
   }
 
+  /** Liste les membres d'équipe affectés à un dossier. */
+  async function listerMembresEquipe(missionSuiviId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('mission_equipe').select('*').eq('mission_suivi_id', missionSuiviId);
+    if (error) throw new Error(`Échec du chargement de l'équipe : ${error.message}`);
+    return data.map(mapperMembreEquipeVersJs);
+  }
+
+  /** Affecte un agent à un dossier. */
+  async function ajouterMembreEquipe(missionSuiviId, agentId, roleSurMission) {
+    const sb = initClient();
+    const ligne = {
+      mission_suivi_id: missionSuiviId,
+      agent_id: agentId,
+      role_sur_mission: roleSurMission || ''
+    };
+    const { data, error } = await sb.from('mission_equipe').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de l'affectation : ${error.message}`);
+    return mapperMembreEquipeVersJs(data);
+  }
+
+  /** Retire un agent d'un dossier. */
+  async function retirerMembreEquipe(id) {
+    const sb = initClient();
+    const { error } = await sb.from('mission_equipe').delete().eq('id', id);
+    if (error) throw new Error(`Échec du retrait : ${error.message}`);
+  }
+
+  /** Liste les autorisations à solliciter/obtenues pour un dossier. */
+  async function listerAutorisations(missionSuiviId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('autorisations_mission').select('*').eq('mission_suivi_id', missionSuiviId).order('id');
+    if (error) throw new Error(`Échec du chargement des autorisations : ${error.message}`);
+    return data.map(mapperAutorisationVersJs);
+  }
+
+  /** Crée une autorisation à solliciter pour un dossier. */
+  async function creerAutorisation(missionSuiviId, intitule) {
+    const sb = initClient();
+    const ligne = {
+      mission_suivi_id: missionSuiviId,
+      intitule
+    };
+    const { data, error } = await sb.from('autorisations_mission').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de la création de l'autorisation : ${error.message}`);
+    return mapperAutorisationVersJs(data);
+  }
+
+  /** Met à jour le statut/date d'obtention/remarque d'une autorisation. */
+  async function mettreAJourAutorisation(id, donnees) {
+    const sb = initClient();
+    const patch = {};
+    if (donnees.statut !== undefined) patch.statut = donnees.statut;
+    if (donnees.dateObtention !== undefined) patch.date_obtention = donnees.dateObtention;
+    if (donnees.remarque !== undefined) patch.remarque = donnees.remarque;
+    const { data, error } = await sb.from('autorisations_mission').update(patch).eq('id', id).select().single();
+    if (error) throw new Error(`Échec de la mise à jour de l'autorisation : ${error.message}`);
+    return mapperAutorisationVersJs(data);
+  }
+
+  /** Supprime une autorisation. */
+  async function supprimerAutorisation(id) {
+    const sb = initClient();
+    const { error } = await sb.from('autorisations_mission').delete().eq('id', id);
+    if (error) throw new Error(`Échec de la suppression de l'autorisation : ${error.message}`);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -399,7 +466,9 @@ const Suivi = (() => {
     calculerAvancementDossier, calculerStatsTableauDeBord,
     connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
     creerDossierMission, listerDossiers, recupererDossier,
-    mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord
+    mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord,
+    listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe,
+    listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation
   };
 })();
 
