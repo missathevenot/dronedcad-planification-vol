@@ -316,19 +316,24 @@ const Suivi = (() => {
   async function recupererDossier(id) {
     const sb = initClient();
     const [{ data: dossier, error: e1 }, { data: executions, error: e2 },
-           { data: etapes, error: e3 }, { data: controles, error: e4 }] = await Promise.all([
+           { data: etapes, error: e3 }, { data: controles, error: e4 },
+           { data: equipe, error: e5 }, { data: autorisations, error: e6 }] = await Promise.all([
       sb.from('missions_suivi').select('*').eq('id', id).single(),
       sb.from('executions_vol').select('*').eq('mission_suivi_id', id).order('numero_mission'),
       sb.from('etapes_traitement').select('*').eq('mission_suivi_id', id),
-      sb.from('controles_qualite').select('*').eq('mission_suivi_id', id)
+      sb.from('controles_qualite').select('*').eq('mission_suivi_id', id),
+      sb.from('mission_equipe').select('*').eq('mission_suivi_id', id),
+      sb.from('autorisations_mission').select('*').eq('mission_suivi_id', id).order('id')
     ]);
     if (e1) throw new Error(`Échec du chargement du dossier : ${e1.message}`);
-    if (e2 || e3 || e4) throw new Error('Échec du chargement du détail du dossier.');
+    if (e2 || e3 || e4 || e5 || e6) throw new Error('Échec du chargement du détail du dossier.');
     return {
       dossier: mapperDossierVersJs(dossier),
       executions: executions.map(mapperExecutionVersJs),
       etapes: etapes.map(mapperEtapeVersJs),
-      controles: controles.map(mapperControleVersJs)
+      controles: controles.map(mapperControleVersJs),
+      equipe: equipe.map(mapperMembreEquipeVersJs),
+      autorisations: autorisations.map(mapperAutorisationVersJs)
     };
   }
 
