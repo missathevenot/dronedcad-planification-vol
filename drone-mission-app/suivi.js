@@ -491,7 +491,8 @@ const Suivi = (() => {
   async function uploaderPieceJointe(tableLiee, ligneId, fichier, typeFichier) {
     const sb = initClient();
     const { data: { user } } = await sb.auth.getUser();
-    const chemin = `${tableLiee}/${ligneId}/${Date.now()}_${fichier.name}`;
+    const nomFichierSecurise = fichier.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const chemin = `${tableLiee}/${ligneId}/${Date.now()}_${nomFichierSecurise}`;
     const { error: erreurUpload } = await sb.storage.from('suivi-pieces-jointes').upload(chemin, fichier);
     if (erreurUpload) throw new Error(`Échec du téléversement : ${erreurUpload.message}`);
     const ligne = {
@@ -503,7 +504,11 @@ const Suivi = (() => {
       uploaded_by: user ? user.id : null
     };
     const { data, error } = await sb.from('pieces_jointes').insert(ligne).select().single();
-    if (error) throw new Error(`Fichier téléversé mais échec de l'enregistrement de la référence : ${error.message}`);
+    if (error) {
+      const err = new Error(`Fichier téléversé mais échec de l'enregistrement de la référence : ${error.message}`);
+      err.cheminStorage = chemin;
+      throw err;
+    }
     return mapperPieceJointeVersJs(data);
   }
 
@@ -527,7 +532,7 @@ const Suivi = (() => {
   async function supprimerPieceJointe(id) {
     const sb = initClient();
     const { error } = await sb.from('pieces_jointes').delete().eq('id', id);
-    if (error) throw new Error(`Échec de la suppression : ${error.message}`);
+    if (error) throw new Error(`Échec de la suppression de la pièce jointe : ${error.message}`);
   }
 
   return {
