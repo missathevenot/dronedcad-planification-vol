@@ -191,6 +191,9 @@ const App = (() => {
     document.getElementById('cameraRes').textContent = `${state.camera.largeurPx} × ${state.camera.hauteurPx} px (${state.camera.megapixels} MP)`;
     majPCTypeHint();
     majCoordsAffichage();
+    document.getElementById('zoneNom').value = state.zone.nom || '';
+    document.getElementById('zoneDescription').value = state.zone.description || '';
+    if (state.zone.commune) document.getElementById('zoneCommune').value = state.zone.commune;
   }
 
   function genererZoneTest() {
@@ -530,8 +533,8 @@ const App = (() => {
     try {
       const profil = await Suivi.profilConnecte();
       await Suivi.creerDossierMission({
-        nomZone: state.nomZone || 'Zone sans nom',
-        commune: state.meteo.commune,
+        nomZone: state.zone.nom || 'Zone sans nom',
+        commune: state.zone.commune,
         superficieHa: dernierResultats.surfaceHa,
         nombreMissionsPrevues: dernierResultats.nbMissionsAutomatiques,
         agentReferentId: profil ? profil.id : null,
@@ -1241,6 +1244,9 @@ const App = (() => {
       try {
         const data = await Exporter.chargerProjet(f);
         Object.assign(state, data.state);
+        if (!data.state.zone && data.state.nomZone) {
+          state.zone = { id: null, nom: data.state.nomZone, commune: '', description: '' };
+        }
         remplirFormulaireDepuisEtat();
         appliquerTheme();
         if (data.zone?.length) Carto.setZone(data.zone);
