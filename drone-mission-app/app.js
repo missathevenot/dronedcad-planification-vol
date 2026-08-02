@@ -831,6 +831,7 @@ const App = (() => {
         document.getElementById('suiviSousOngletExecution').classList.toggle('is-hidden', cible !== 'execution');
         document.getElementById('suiviSousOngletTraitement').classList.toggle('is-hidden', cible !== 'traitement');
         document.getElementById('suiviSousOngletQualite').classList.toggle('is-hidden', cible !== 'qualite');
+        document.getElementById('suiviSousOngletChangements').classList.toggle('is-hidden', cible !== 'changements');
       });
     });
   }
@@ -868,6 +869,7 @@ const App = (() => {
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'execution' ? ' is-active' : ''}" data-sous-onglet="execution">Acquisition</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'traitement' ? ' is-active' : ''}" data-sous-onglet="traitement">Traitement</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'qualite' ? ' is-active' : ''}" data-sous-onglet="qualite">Contrôle qualité</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'changements' ? ' is-active' : ''}" data-sous-onglet="changements">Détection des changements</button>
         </div>
       </div>
 
@@ -875,6 +877,7 @@ const App = (() => {
       <div id="suiviSousOngletExecution" class="suivi-sous-panel${suiviSousOngletActif === 'execution' ? '' : ' is-hidden'}">${rendreCartesExecutions(executions)}</div>
       <div id="suiviSousOngletTraitement" class="suivi-sous-panel${suiviSousOngletActif === 'traitement' ? '' : ' is-hidden'}">${rendreCartesEtapes(etapes)}</div>
       <div id="suiviSousOngletQualite" class="suivi-sous-panel${suiviSousOngletActif === 'qualite' ? '' : ' is-hidden'}">${rendreCartesQualite(controles)}</div>
+      <div id="suiviSousOngletChangements" class="suivi-sous-panel${suiviSousOngletActif === 'changements' ? '' : ' is-hidden'}">${rendreSousOngletChangements(dossier)}</div>
     `;
 
     bindSousOngletsSuivi();
