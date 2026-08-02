@@ -426,6 +426,14 @@ const Suivi = (() => {
     if (error) throw new Error(`Échec du retrait : ${error.message}`);
   }
 
+  /** Liste les agents actifs (pour les affecter à une mission). */
+  async function listerAgentsActifs() {
+    const sb = initClient();
+    const { data, error } = await sb.from('profils').select('id, nom_complet').eq('statut', 'actif').order('nom_complet');
+    if (error) throw new Error(`Échec du chargement des agents : ${error.message}`);
+    return data.map((p) => ({ id: p.id, nomComplet: p.nom_complet }));
+  }
+
   /** Liste les autorisations à solliciter/obtenues pour un dossier. */
   async function listerAutorisations(missionSuiviId) {
     const sb = initClient();
@@ -600,7 +608,7 @@ const Suivi = (() => {
     connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
     creerDossierMission, listerDossiers, recupererDossier,
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord,
-    listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe,
+    listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe, listerAgentsActifs,
     listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation,
     listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle,
     uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe,

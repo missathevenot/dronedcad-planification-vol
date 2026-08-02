@@ -1183,6 +1183,16 @@ const App = (() => {
             </div>
           </div>
         `).join('')}
+        <div class="suivi-tache-carte">
+          <b>Affecter un agent</b>
+          <div class="field-row">
+            <div class="field"><label>Agent</label>
+              <select id="suiviAffectationAgent"></select>
+            </div>
+            <div class="field"><label>Rôle sur la mission</label><input type="text" id="suiviAffectationRole" placeholder="Ex : Télépilote"></div>
+          </div>
+          <button id="btnSuiviAffecterAgent" class="btn btn--accent">Affecter</button>
+        </div>
       </div>
       <div class="panel-box">
         <h3 class="mt">Autorisations à solliciter</h3>
@@ -1211,6 +1221,17 @@ const App = (() => {
         </div>
       </div>
     `;
+  }
+
+  async function chargerAgentsPourAffectation() {
+    const select = document.getElementById('suiviAffectationAgent');
+    if (!select) return;
+    try {
+      const agents = await Suivi.listerAgentsActifs();
+      select.innerHTML = agents.map((agent) => `<option value="${agent.id}">${Utils.escapeHtml(agent.nomComplet)}</option>`).join('');
+    } catch (err) {
+      Utils.toast(`Échec du chargement des agents : ${err.message}`, 'danger');
+    }
   }
 
   function bindFormulairesDetailSuivi() {
@@ -1319,6 +1340,28 @@ const App = (() => {
         }
       });
     });
+
+    chargerAgentsPourAffectation();
+    const btnAffecterAgent = document.getElementById('btnSuiviAffecterAgent');
+    if (btnAffecterAgent) {
+      btnAffecterAgent.addEventListener('click', async () => {
+        const agentId = document.getElementById('suiviAffectationAgent').value;
+        const roleSurMission = document.getElementById('suiviAffectationRole').value.trim();
+        if (!agentId || !roleSurMission) {
+          Utils.toast('Choisissez un agent et indiquez son rôle sur la mission.', 'warning');
+          return;
+        }
+        btnAffecterAgent.disabled = true;
+        try {
+          await Suivi.ajouterMembreEquipe(suiviDossierActuel.dossier.id, agentId, roleSurMission);
+          Utils.toast('Agent affecté.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de l'affectation : ${err.message}`, 'danger');
+          btnAffecterAgent.disabled = false;
+        }
+      });
+    }
 
     document.querySelectorAll('[data-autorisation-id]').forEach((carte) => {
       const btn = carte.querySelector('.suivi-autorisation-enregistrer');
