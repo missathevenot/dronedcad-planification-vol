@@ -932,18 +932,21 @@ const App = (() => {
         </div>
         <button class="btn btn--accent suivi-incident-ajouter">Ajouter l'incident</button>
       `;
-      hote.querySelector('.suivi-incident-ajouter').addEventListener('click', async () => {
+      const btnAjouterIncident = hote.querySelector('.suivi-incident-ajouter');
+      btnAjouterIncident.addEventListener('click', async () => {
         const description = hote.querySelector('.suivi-incident-description').value.trim();
         if (!description) {
           Utils.toast('Décrivez l\'incident avant de l\'ajouter.', 'warning');
           return;
         }
+        btnAjouterIncident.disabled = true;
         try {
           await Suivi.enregistrerIncidentVol(executionVolId, { description, gravite: hote.querySelector('.suivi-incident-gravite').value });
           Utils.toast('Incident enregistré.', 'success');
           await chargerRegistreIncidents(executionVolId);
         } catch (err) {
           Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+          btnAjouterIncident.disabled = false;
         }
       });
     } catch (err) {
