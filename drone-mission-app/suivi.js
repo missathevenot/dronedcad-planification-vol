@@ -113,43 +113,76 @@ const Suivi = (() => {
     };
   }
 
-  /** Convertit une ligne Supabase `mission_equipe` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `mission_equipe` en objet JS (camelCase). */
   function mapperMembreEquipeVersJs(row) {
-    return { id: row.id, missionSuiviId: row.mission_suivi_id, agentId: row.agent_id, roleSurMission: row.role_sur_mission };
+    return {
+      id: row.id,
+      missionSuiviId: row.mission_suivi_id,
+      agentId: row.agent_id,
+      roleSurMission: row.role_sur_mission
+    };
   }
 
-  /** Convertit une ligne Supabase `autorisations_mission` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `autorisations_mission` en objet JS (camelCase). */
   function mapperAutorisationVersJs(row) {
     return {
-      id: row.id, missionSuiviId: row.mission_suivi_id, intitule: row.intitule,
-      statut: row.statut, dateObtention: row.date_obtention, remarque: row.remarque
+      id: row.id,
+      missionSuiviId: row.mission_suivi_id,
+      intitule: row.intitule,
+      statut: row.statut,
+      dateObtention: row.date_obtention,
+      remarque: row.remarque
     };
   }
 
-  /** Convertit une ligne Supabase `registre_incidents_vol` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `registre_incidents_vol` en objet JS (camelCase). */
   function mapperIncidentVersJs(row) {
-    return { id: row.id, executionVolId: row.execution_vol_id, dateIncident: row.date_incident, description: row.description, gravite: row.gravite };
+    return {
+      id: row.id,
+      executionVolId: row.execution_vol_id,
+      dateIncident: row.date_incident,
+      description: row.description,
+      gravite: row.gravite
+    };
   }
 
-  /** Convertit une ligne Supabase `registre_anomalies_qualite` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `registre_anomalies_qualite` en objet JS (camelCase). */
   function mapperAnomalieVersJs(row) {
-    return { id: row.id, controleId: row.controle_id, description: row.description, dateSignalement: row.date_signalement, statut: row.statut };
+    return {
+      id: row.id,
+      controleId: row.controle_id,
+      description: row.description,
+      dateSignalement: row.date_signalement,
+      statut: row.statut
+    };
   }
 
-  /** Convertit une ligne Supabase `historique_corrections` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `historique_corrections` en objet JS (camelCase). */
   function mapperCorrectionVersJs(row) {
-    return { id: row.id, controleId: row.controle_id, dateCorrection: row.date_correction, description: row.description, corrigePar: row.corrige_par };
+    return {
+      id: row.id,
+      controleId: row.controle_id,
+      dateCorrection: row.date_correction,
+      description: row.description,
+      corrigePar: row.corrige_par
+    };
   }
 
-  /** Convertit une ligne Supabase `pieces_jointes` en objet JS. */
+  /** Convertit une ligne Supabase (snake_case) `pieces_jointes` en objet JS (camelCase). */
   function mapperPieceJointeVersJs(row) {
     return {
-      id: row.id, tableLiee: row.table_liee, ligneId: row.ligne_id, typeFichier: row.type_fichier,
-      cheminStorage: row.chemin_storage, nomOriginal: row.nom_original, uploadedBy: row.uploaded_by, uploadedAt: row.uploaded_at
+      id: row.id,
+      tableLiee: row.table_liee,
+      ligneId: row.ligne_id,
+      typeFichier: row.type_fichier,
+      cheminStorage: row.chemin_storage,
+      nomOriginal: row.nom_original,
+      uploadedBy: row.uploaded_by,
+      uploadedAt: row.uploaded_at
     };
   }
 
-  /** Indicateurs de charge : nombre de drones/agents actuellement affectés à des missions non terminées. */
+  /** Indicateurs de charge : nombre de missions actives et de drones distincts actuellement affectés (hors missions terminées). */
   function calculerIndicateursCharge(dossiers) {
     const dossiersActifs = dossiers.filter((d) => d.statutGlobal !== 'terminee');
     const dronesUniques = new Set();

@@ -213,24 +213,24 @@ test('mapperAutorisationVersJs: convertit une ligne autorisations_mission', () =
   const js = Suivi.mapperAutorisationVersJs({
     id: 'au1', mission_suivi_id: 'm1', intitule: 'Autorisation ANAC', statut: 'obtenue', date_obtention: '2026-01-01', remarque: ''
   });
-  assert.strictEqual(js.intitule, 'Autorisation ANAC');
-  assert.strictEqual(js.statut, 'obtenue');
+  assert.deepStrictEqual(js, {
+    id: 'au1', missionSuiviId: 'm1', intitule: 'Autorisation ANAC', statut: 'obtenue', dateObtention: '2026-01-01', remarque: ''
+  });
 });
 
 test('mapperIncidentVersJs: convertit une ligne registre_incidents_vol', () => {
   const js = Suivi.mapperIncidentVersJs({ id: 'i1', execution_vol_id: 'ex1', date_incident: '2026-01-01', description: 'Vent fort', gravite: 'majeure' });
-  assert.strictEqual(js.description, 'Vent fort');
-  assert.strictEqual(js.gravite, 'majeure');
+  assert.deepStrictEqual(js, { id: 'i1', executionVolId: 'ex1', dateIncident: '2026-01-01', description: 'Vent fort', gravite: 'majeure' });
 });
 
 test('mapperAnomalieVersJs: convertit une ligne registre_anomalies_qualite', () => {
   const js = Suivi.mapperAnomalieVersJs({ id: 'an1', controle_id: 'c1', description: 'Trou dans le nuage', date_signalement: '2026-01-01', statut: 'ouverte' });
-  assert.strictEqual(js.statut, 'ouverte');
+  assert.deepStrictEqual(js, { id: 'an1', controleId: 'c1', description: 'Trou dans le nuage', dateSignalement: '2026-01-01', statut: 'ouverte' });
 });
 
 test('mapperCorrectionVersJs: convertit une ligne historique_corrections', () => {
   const js = Suivi.mapperCorrectionVersJs({ id: 'co1', controle_id: 'c1', date_correction: '2026-01-02', description: 'Recalage', corrige_par: 'a1' });
-  assert.strictEqual(js.description, 'Recalage');
+  assert.deepStrictEqual(js, { id: 'co1', controleId: 'c1', dateCorrection: '2026-01-02', description: 'Recalage', corrigePar: 'a1' });
 });
 
 test('mapperPieceJointeVersJs: convertit une ligne pieces_jointes', () => {
@@ -238,7 +238,10 @@ test('mapperPieceJointeVersJs: convertit une ligne pieces_jointes', () => {
     id: 'p1', table_liee: 'executions_vol', ligne_id: 'ex1', type_fichier: 'image',
     chemin_storage: 'executions_vol/ex1/photo.jpg', nom_original: 'photo.jpg', uploaded_by: 'a1', uploaded_at: '2026-01-01T00:00:00Z'
   });
-  assert.strictEqual(js.cheminStorage, 'executions_vol/ex1/photo.jpg');
+  assert.deepStrictEqual(js, {
+    id: 'p1', tableLiee: 'executions_vol', ligneId: 'ex1', typeFichier: 'image',
+    cheminStorage: 'executions_vol/ex1/photo.jpg', nomOriginal: 'photo.jpg', uploadedBy: 'a1', uploadedAt: '2026-01-01T00:00:00Z'
+  });
 });
 
 test('calculerIndicateursCharge: compte les drones uniques affectés aux missions non terminées', () => {
@@ -255,5 +258,12 @@ test('calculerIndicateursCharge: compte les drones uniques affectés aux mission
 test('calculerIndicateursCharge: tableau vide donne des indicateurs à zéro', () => {
   const indicateurs = Suivi.calculerIndicateursCharge([]);
   assert.strictEqual(indicateurs.missionsActives, 0);
+  assert.strictEqual(indicateurs.dronesAffectes, 0);
+});
+
+test('calculerIndicateursCharge: dossier sans propriété dronesAffectes ne lève pas et compte 0 drone', () => {
+  const dossiers = [{ statutGlobal: 'en_cours' }];
+  const indicateurs = Suivi.calculerIndicateursCharge(dossiers);
+  assert.strictEqual(indicateurs.missionsActives, 1);
   assert.strictEqual(indicateurs.dronesAffectes, 0);
 });
