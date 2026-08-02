@@ -267,3 +267,63 @@ test('calculerIndicateursCharge: dossier sans propriété dronesAffectes ne lèv
   assert.strictEqual(indicateurs.missionsActives, 1);
   assert.strictEqual(indicateurs.dronesAffectes, 0);
 });
+
+test('mapperChangementVersJs: convertit une ligne changements_territoriaux', () => {
+  const js = Suivi.mapperChangementVersJs({
+    id: 'ch1', mission_suivi_id: 'm1', dossier_reference_id: 'm0',
+    type: 'nouvelle_construction', geometrie: [[5.3, -4.0], [5.31, -4.0], [5.31, -4.01]],
+    priorite: 'haute', description: 'Bâtiment non cadastré', date_detection: '2026-08-01', detecte_par: 'a1'
+  });
+  assert.strictEqual(js.type, 'nouvelle_construction');
+  assert.strictEqual(js.dossierReferenceId, 'm0');
+  assert.strictEqual(js.priorite, 'haute');
+  assert.deepStrictEqual(js.geometrie, [[5.3, -4.0], [5.31, -4.0], [5.31, -4.01]]);
+});
+
+test('filtrerChangements: filtre par type', () => {
+  const changements = [
+    { type: 'extension', priorite: 'faible' },
+    { type: 'demolition', priorite: 'haute' }
+  ];
+  const resultat = Suivi.filtrerChangements(changements, { type: 'demolition' });
+  assert.strictEqual(resultat.length, 1);
+  assert.strictEqual(resultat[0].type, 'demolition');
+});
+
+test('filtrerChangements: filtre par priorité', () => {
+  const changements = [
+    { type: 'extension', priorite: 'faible' },
+    { type: 'demolition', priorite: 'haute' }
+  ];
+  const resultat = Suivi.filtrerChangements(changements, { priorite: 'haute' });
+  assert.strictEqual(resultat.length, 1);
+  assert.strictEqual(resultat[0].priorite, 'haute');
+});
+
+test('filtrerChangements: sans filtre retourne tout', () => {
+  const changements = [{ type: 'extension', priorite: 'faible' }, { type: 'demolition', priorite: 'haute' }];
+  assert.strictEqual(Suivi.filtrerChangements(changements, {}).length, 2);
+  assert.strictEqual(Suivi.filtrerChangements(changements).length, 2);
+});
+
+test('calculerStatsChangements: compte par type et par priorité', () => {
+  const changements = [
+    { type: 'extension', priorite: 'faible' },
+    { type: 'extension', priorite: 'moyenne' },
+    { type: 'demolition', priorite: 'haute' }
+  ];
+  const stats = Suivi.calculerStatsChangements(changements);
+  assert.strictEqual(stats.total, 3);
+  assert.strictEqual(stats.parType.extension, 2);
+  assert.strictEqual(stats.parType.demolition, 1);
+  assert.strictEqual(stats.parPriorite.faible, 1);
+  assert.strictEqual(stats.parPriorite.moyenne, 1);
+  assert.strictEqual(stats.parPriorite.haute, 1);
+});
+
+test('calculerStatsChangements: tableau vide donne des stats à zéro', () => {
+  const stats = Suivi.calculerStatsChangements([]);
+  assert.strictEqual(stats.total, 0);
+  assert.deepStrictEqual(stats.parType, {});
+  assert.deepStrictEqual(stats.parPriorite, { faible: 0, moyenne: 0, haute: 0 });
+});

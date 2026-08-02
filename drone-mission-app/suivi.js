@@ -217,6 +217,40 @@ const Suivi = (() => {
     return { total, termines, enCours, incidents, volumetrieTotaleMo };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `changements_territoriaux` en objet JS (camelCase). */
+  function mapperChangementVersJs(row) {
+    return {
+      id: row.id,
+      missionSuiviId: row.mission_suivi_id,
+      dossierReferenceId: row.dossier_reference_id,
+      type: row.type,
+      geometrie: row.geometrie,
+      priorite: row.priorite,
+      description: row.description,
+      dateDetection: row.date_detection,
+      detectePar: row.detecte_par
+    };
+  }
+
+  /** Filtre une liste de changements par type et/ou priorité. Filtres vides = pas de filtrage sur ce critère. */
+  function filtrerChangements(changements, filtres = {}) {
+    return changements.filter((c) =>
+      (!filtres.type || c.type === filtres.type) &&
+      (!filtres.priorite || c.priorite === filtres.priorite)
+    );
+  }
+
+  /** Compte les changements par type et par priorité, pour l'en-tête de la liste et le rapport PDF. */
+  function calculerStatsChangements(changements) {
+    const parType = {};
+    const parPriorite = { faible: 0, moyenne: 0, haute: 0 };
+    changements.forEach((c) => {
+      parType[c.type] = (parType[c.type] || 0) + 1;
+      parPriorite[c.priorite] = (parPriorite[c.priorite] || 0) + 1;
+    });
+    return { total: changements.length, parType, parPriorite };
+  }
+
   // ------------------------------------------------------------------
   // Fonctions impures (appels réseau Supabase, non testées automatiquement)
   // ------------------------------------------------------------------
@@ -604,6 +638,7 @@ const Suivi = (() => {
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
     mapperEtapeVersJs, mapperControleVersJs,
     mapperMembreEquipeVersJs, mapperAutorisationVersJs, mapperIncidentVersJs, mapperAnomalieVersJs, mapperCorrectionVersJs, mapperPieceJointeVersJs, calculerIndicateursCharge,
+    mapperChangementVersJs, filtrerChangements, calculerStatsChangements,
     calculerAvancementDossier, calculerStatsTableauDeBord,
     connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
     creerDossierMission, listerDossiers, recupererDossier,
