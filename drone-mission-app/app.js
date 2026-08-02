@@ -193,7 +193,7 @@ const App = (() => {
     majCoordsAffichage();
     document.getElementById('zoneNom').value = state.zone.nom || '';
     document.getElementById('zoneDescription').value = state.zone.description || '';
-    if (state.zone.commune) document.getElementById('zoneCommune').value = state.zone.commune;
+    document.getElementById('zoneCommune').value = state.zone.commune || '';
   }
 
   function genererZoneTest() {
@@ -664,7 +664,7 @@ const App = (() => {
     state.zone = { id: zone.id, nom: zone.nom, commune: zone.commune, description: zone.description };
     document.getElementById('zoneNom').value = zone.nom;
     document.getElementById('zoneDescription').value = zone.description || '';
-    if (zone.commune) document.getElementById('zoneCommune').value = zone.commune;
+    document.getElementById('zoneCommune').value = zone.commune || '';
     if (zone.geometrie && zone.geometrie.length >= 3) Carto.setZone(zone.geometrie);
   }
 
@@ -739,6 +739,7 @@ const App = (() => {
       state.zone = { id: null, nom: '', commune: '', description: '' };
       document.getElementById('zoneNom').value = '';
       document.getElementById('zoneDescription').value = '';
+      document.getElementById('zoneCommune').value = '';
       zonesEnCache = await Zones.listerZones();
       peuplerCommunes();
       peuplerDatalistZones();
