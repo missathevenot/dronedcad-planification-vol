@@ -301,7 +301,7 @@ const Suivi = (() => {
     return mapperDossierVersJs(dossierInsere);
   }
 
-  /** Liste les dossiers, avec filtres optionnels { statut, commune }. */
+  /** Liste les dossiers, avec filtres optionnels { statut, commune, zoneId }. */
   async function listerDossiers(filtres = {}) {
     const sb = initClient();
     let requete = sb.from('missions_suivi').select('*').order('created_at', { ascending: false });
