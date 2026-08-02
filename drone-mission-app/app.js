@@ -742,6 +742,7 @@ const App = (() => {
       Utils.toast('Zone supprimée.', 'success');
     } catch (err) {
       Utils.toast(`Échec de la suppression de la zone : ${err.message}`, 'danger');
+    } finally {
       btn.disabled = false;
     }
   }
