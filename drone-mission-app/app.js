@@ -816,6 +816,13 @@ const App = (() => {
   const LIBELLES_LIVRABLE = { orthophoto: 'Orthophoto', mns: 'MNS', mnt: 'MNT', nuage_points: 'Nuage de points' };
   const LIBELLES_RESULTAT_QUALITE = { conforme: 'Conforme', rejete: 'Rejeté', a_reprendre: 'À reprendre' };
   const BADGE_RESULTAT_QUALITE = { conforme: 'success', rejete: 'danger', a_reprendre: 'warning' };
+  const LIBELLES_TYPE_CHANGEMENT = {
+    nouvelle_construction: 'Nouvelle construction', extension: 'Extension', demolition: 'Démolition',
+    changement_occupation_sol: "Changement d'occupation du sol",
+    anomalie_cadastrale: 'Anomalie cadastrale', anomalie_fiscale: 'Anomalie fiscale'
+  };
+  const LIBELLES_PRIORITE_CHANGEMENT = { faible: 'Faible', moyenne: 'Moyenne', haute: 'Haute' };
+  const BADGE_PRIORITE_CHANGEMENT = { faible: 'success', moyenne: 'warning', haute: 'danger' };
 
   let suiviDossierActuel = null;
   let suiviSousOngletActif = 'planification';
@@ -1166,6 +1173,54 @@ const App = (() => {
     `;
   }
 
+  function rendreSousOngletChangements(dossier) {
+    return `
+      <div class="panel-box">
+        <h3>Dossier de référence</h3>
+        <p class="hint">Le levé antérieur de la même zone servant de comparaison "avant". Laisser vide pour un premier levé.</p>
+        <div class="field">
+          <label>Dossier de référence</label>
+          <select id="changementsDossierReference"><option value="">Chargement…</option></select>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h3>Carte des changements</h3>
+        <div class="btn-row">
+          <button id="btnChangementsDessiner" class="btn btn--accent">✎ Dessiner un changement</button>
+          <button id="btnChangementsRapport" class="btn btn--ghost">⭳ Générer le rapport d'analyse territoriale</button>
+        </div>
+        <div class="suivi-mini-carte"><div id="changementsCarte"></div></div>
+
+        <div id="changementsFormulaireHost" class="suivi-tache-carte is-hidden">
+          <b>Nouveau changement</b>
+          <div class="field-row">
+            <div class="field"><label>Type</label>
+              <select id="changementsNouveauType">
+                ${Object.keys(LIBELLES_TYPE_CHANGEMENT).map((v) => `<option value="${v}">${LIBELLES_TYPE_CHANGEMENT[v]}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field"><label>Priorité</label>
+              <select id="changementsNouvellePriorite">
+                ${Object.keys(LIBELLES_PRIORITE_CHANGEMENT).map((v) => `<option value="${v}" ${v === 'moyenne' ? 'selected' : ''}>${LIBELLES_PRIORITE_CHANGEMENT[v]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>Description</label><textarea id="changementsNouvelleDescription" rows="2"></textarea></div>
+          <div class="btn-row">
+            <button id="btnChangementsEnregistrer" class="btn btn--accent">Enregistrer</button>
+            <button id="btnChangementsAnnuler" class="btn btn--ghost">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-box" data-changements-liste="${dossier.id}:${dossier.zoneId || ''}">
+        <h3>Changements enregistrés</h3>
+        <p class="hint">Chargement…</p>
+      </div>
+    `;
+  }
+
   function rendreSousOngletPlanification(dossier, equipe, autorisations) {
     const indicateurs = Suivi.calculerIndicateursCharge([dossier]);
     return `
@@ -1234,6 +1289,24 @@ const App = (() => {
       select.innerHTML = agents.map((agent) => `<option value="${agent.id}">${Utils.escapeHtml(agent.nomComplet)}</option>`).join('');
     } catch (err) {
       Utils.toast(`Échec du chargement des agents : ${err.message}`, 'danger');
+    }
+  }
+
+  async function chargerDossiersReferencePourChangements(zoneId, dossierActuelId) {
+    const select = document.getElementById('changementsDossierReference');
+    if (!select) return;
+    if (!zoneId) {
+      select.innerHTML = '<option value="">Aucun (zone non rattachée à la bibliothèque)</option>';
+      return;
+    }
+    try {
+      const dossiers = await Suivi.listerDossiers({ zoneId });
+      const autres = dossiers.filter((d) => d.id !== dossierActuelId);
+      select.innerHTML = '<option value="">Aucun (premier levé)</option>' +
+        autres.map((d) => `<option value="${d.id}">${d.datePlanification} — ${LIBELLES_STATUT_DOSSIER[d.statutGlobal] || d.statutGlobal}</option>`).join('');
+    } catch (err) {
+      select.innerHTML = '<option value="">Échec du chargement</option>';
+      Utils.toast(`Échec du chargement des dossiers de référence : ${err.message}`, 'danger');
     }
   }
 
