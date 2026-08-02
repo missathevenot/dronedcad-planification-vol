@@ -1082,12 +1082,15 @@ const App = (() => {
     }
 
     document.querySelectorAll('[data-membre-id]').forEach((carte) => {
-      carte.querySelector('.suivi-equipe-retirer').addEventListener('click', async () => {
+      const btn = carte.querySelector('.suivi-equipe-retirer');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
         try {
           await Suivi.retirerMembreEquipe(carte.dataset.membreId);
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
         } catch (err) {
           Utils.toast(`Échec du retrait : ${err.message}`, 'danger');
+          btn.disabled = false;
         }
       });
     });
