@@ -901,10 +901,54 @@ const App = (() => {
           <div class="field"><label>Durée réelle (min)</label><input type="number" class="suivi-vol-duree" value="${e.dureeReelleMin ?? ''}"></div>
           <div class="field"><label>Photos réelles</label><input type="number" class="suivi-vol-photos" value="${e.photosReelles ?? ''}"></div>
         </div>
-        <div class="field"><label>Incident (si applicable)</label><textarea class="suivi-vol-incident" rows="2">${Utils.escapeHtml(e.descriptionIncident) || ''}</textarea></div>
         <button class="btn btn--accent suivi-vol-enregistrer">Enregistrer</button>
+        <button class="btn btn--ghost suivi-vol-couverture-reelle" data-execution-couverture="${e.id}">📍 Enregistrer la couverture réelle depuis la carte</button>
+        ${e.couvertureReelle ? '<p class="hint">Couverture réelle déjà enregistrée pour ce vol.</p>' : ''}
+        <div class="suivi-registre-host" data-registre-incidents="${e.id}">Chargement des incidents…</div>
+        <div class="suivi-pieces-jointes-host" data-pieces-jointes="executions_vol:${e.id}">Chargement des pièces jointes…</div>
       </div>
     `).join('');
+  }
+
+  async function chargerRegistreIncidents(executionVolId) {
+    const hote = document.querySelector(`[data-registre-incidents="${executionVolId}"]`);
+    if (!hote) return;
+    try {
+      const incidents = await Suivi.listerIncidentsVol(executionVolId);
+      hote.innerHTML = `
+        <h4 class="mt">Registre des incidents</h4>
+        ${incidents.length === 0 ? '<p class="hint">Aucun incident enregistré.</p>' : incidents.map((i) => `
+          <p class="hint">${i.dateIncident} — <b>${i.gravite}</b> — ${Utils.escapeHtml(i.description)}</p>
+        `).join('')}
+        <div class="field-row">
+          <div class="field"><label>Description</label><input type="text" class="suivi-incident-description" placeholder="Décrire l'incident"></div>
+          <div class="field"><label>Gravité</label>
+            <select class="suivi-incident-gravite">
+              <option value="mineure">Mineure</option>
+              <option value="majeure">Majeure</option>
+              <option value="critique">Critique</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn--accent suivi-incident-ajouter">Ajouter l'incident</button>
+      `;
+      hote.querySelector('.suivi-incident-ajouter').addEventListener('click', async () => {
+        const description = hote.querySelector('.suivi-incident-description').value.trim();
+        if (!description) {
+          Utils.toast('Décrivez l\'incident avant de l\'ajouter.', 'warning');
+          return;
+        }
+        try {
+          await Suivi.enregistrerIncidentVol(executionVolId, { description, gravite: hote.querySelector('.suivi-incident-gravite').value });
+          Utils.toast('Incident enregistré.', 'success');
+          await chargerRegistreIncidents(executionVolId);
+        } catch (err) {
+          Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+        }
+      });
+    } catch (err) {
+      hote.innerHTML = `<p class="hint">Échec du chargement des incidents : ${Utils.escapeHtml(err.message)}</p>`;
+    }
   }
 
   function rendreCartesEtapes(etapes) {
@@ -1027,8 +1071,7 @@ const App = (() => {
             statut: carte.querySelector('.suivi-vol-statut').value,
             dateReelle: carte.querySelector('.suivi-vol-date').value || null,
             dureeReelleMin: carte.querySelector('.suivi-vol-duree').value ? Number(carte.querySelector('.suivi-vol-duree').value) : null,
-            photosReelles: carte.querySelector('.suivi-vol-photos').value ? Number(carte.querySelector('.suivi-vol-photos').value) : null,
-            descriptionIncident: carte.querySelector('.suivi-vol-incident').value
+            photosReelles: carte.querySelector('.suivi-vol-photos').value ? Number(carte.querySelector('.suivi-vol-photos').value) : null
           });
           Utils.toast('Vol mis à jour.', 'success');
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
@@ -1037,6 +1080,32 @@ const App = (() => {
           btn.disabled = false;
         }
       });
+    });
+
+    document.querySelectorAll('[data-registre-incidents]').forEach((hote) => {
+      chargerRegistreIncidents(hote.dataset.registreIncidents);
+    });
+    document.querySelectorAll('[data-execution-couverture]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const zoneActuelle = Carto.getZone();
+        if (zoneActuelle.length < 3) {
+          Utils.toast('Dessinez la couverture réelle sur la carte (onglet Zone & Cartographie) avant de l\'enregistrer ici.', 'warning');
+          return;
+        }
+        btn.disabled = true;
+        try {
+          await Suivi.mettreAJourCouvertureReelle(btn.dataset.executionCouverture, zoneActuelle);
+          Utils.toast('Couverture réelle enregistrée.', 'success');
+          await afficherDetailSuivi(suiviDossierActuel.dossier.id);
+        } catch (err) {
+          Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+          btn.disabled = false;
+        }
+      });
+    });
+    document.querySelectorAll('[data-pieces-jointes]').forEach((hote) => {
+      const [tableLiee, ligneId] = hote.dataset.piecesJointes.split(':');
+      chargerPiecesJointes(tableLiee, ligneId, hote);
     });
 
     document.querySelectorAll('[data-etape-id]').forEach((carte) => {
