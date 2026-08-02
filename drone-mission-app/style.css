@@ -74,6 +74,7 @@ input,select{font-family:var(--font-mono);}
 }
 .nav__item:hover{background:var(--panel-2); color:var(--text);}
 .nav__item.is-active{background:var(--panel-2); border-color:var(--line); color:var(--amber);}
+body.theme-clair .nav__item:not(:hover):not(.is-active){color:#111111;}
 .nav__ico{width:18px; text-align:center; opacity:.85;}
 .nav__badge{
   margin-left:auto; background:var(--danger); color:#fff; font-size:.68rem; font-weight:700;
