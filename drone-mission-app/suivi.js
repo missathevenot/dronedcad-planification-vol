@@ -24,7 +24,7 @@ const Suivi = (() => {
   // ------------------------------------------------------------------
 
   /** Construit les lignes à insérer (dossier + vols + étapes) à partir d'un projet DroneDCAD. */
-  function construireDossierDepuisProjet({ nomZone, commune, superficieHa, nombreMissionsPrevues, agentReferentId, donneesPlanification }) {
+  function construireDossierDepuisProjet({ nomZone, commune, superficieHa, nombreMissionsPrevues, agentReferentId, donneesPlanification, zoneId, dronesAffectes, budgetPrevisionnelFcfa }) {
     const dossier = {
       nom_zone: nomZone,
       commune: commune || '',
@@ -34,7 +34,10 @@ const Suivi = (() => {
       agent_referent_id: agentReferentId,
       statut_global: 'planifiee',
       donnees_planification: donneesPlanification,
-      historique: []
+      historique: [],
+      zone_id: zoneId || null,
+      drones_affectes: dronesAffectes || [],
+      budget_previsionnel_fcfa: budgetPrevisionnelFcfa ?? null
     };
     const executions = [];
     for (let n = 1; n <= nombreMissionsPrevues; n++) {
@@ -58,7 +61,10 @@ const Suivi = (() => {
       donneesPlanification: row.donnees_planification,
       historique: row.historique,
       createdBy: row.created_by,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      zoneId: row.zone_id,
+      dronesAffectes: row.drones_affectes || [],
+      budgetPrevisionnelFcfa: row.budget_previsionnel_fcfa
     };
   }
 

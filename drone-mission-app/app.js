@@ -537,7 +537,8 @@ const App = (() => {
         superficieHa: dernierResultats.surfaceHa,
         nombreMissionsPrevues: dernierResultats.nbMissionsAutomatiques,
         agentReferentId: profil ? profil.id : null,
-        donneesPlanification: state
+        donneesPlanification: { etat: state, resultats: dernierResultats },
+        zoneId: state.zone.id
       });
       Utils.toast('Dossier envoyé vers le Suivi post levé par drone.', 'success');
     } catch (err) {

@@ -66,6 +66,40 @@ test('mapperDossierVersJs: converts a snake_case Supabase row to a camelCase obj
   assert.equal(js.createdAt, '2026-08-01T10:00:00Z');
 });
 
+test('construireDossierDepuisProjet: inclut zone_id, drones_affectes, budget_previsionnel_fcfa', () => {
+  const { dossier } = Suivi.construireDossierDepuisProjet({
+    nomZone: 'Zone test', commune: 'Yopougon', superficieHa: 10, nombreMissionsPrevues: 1,
+    agentReferentId: 'agent-1', donneesPlanification: {}, zoneId: 'zone-uuid-1',
+    dronesAffectes: ['DJI-01'], budgetPrevisionnelFcfa: 500000
+  });
+  assert.strictEqual(dossier.zone_id, 'zone-uuid-1');
+  assert.deepStrictEqual(dossier.drones_affectes, ['DJI-01']);
+  assert.strictEqual(dossier.budget_previsionnel_fcfa, 500000);
+});
+
+test('construireDossierDepuisProjet: zone_id/drones_affectes ont des valeurs par défaut sûres si absents', () => {
+  const { dossier } = Suivi.construireDossierDepuisProjet({
+    nomZone: 'Zone test', commune: '', superficieHa: 10, nombreMissionsPrevues: 1,
+    agentReferentId: null, donneesPlanification: {}
+  });
+  assert.strictEqual(dossier.zone_id, null);
+  assert.deepStrictEqual(dossier.drones_affectes, []);
+  assert.strictEqual(dossier.budget_previsionnel_fcfa, null);
+});
+
+test('mapperDossierVersJs: convertit zone_id/drones_affectes/budget_previsionnel_fcfa', () => {
+  const js = Suivi.mapperDossierVersJs({
+    id: 'd1', nom_zone: 'Z', commune: 'C', date_planification: '2026-01-01',
+    superficie_ha: 5, nombre_missions_prevues: 1, agent_referent_id: null,
+    statut_global: 'planifiee', donnees_planification: {}, historique: [],
+    created_by: null, created_at: '2026-01-01T00:00:00Z',
+    zone_id: 'zone-uuid-1', drones_affectes: ['DJI-01'], budget_previsionnel_fcfa: 500000
+  });
+  assert.strictEqual(js.zoneId, 'zone-uuid-1');
+  assert.deepStrictEqual(js.dronesAffectes, ['DJI-01']);
+  assert.strictEqual(js.budgetPrevisionnelFcfa, 500000);
+});
+
 test('mapperExecutionVersJs: converts a snake_case row to camelCase', () => {
   const row = {
     id: 'e1', mission_suivi_id: 'd1', numero_mission: 2, statut: 'executee',
