@@ -1018,6 +1018,89 @@ const App = (() => {
     }
   }
 
+  async function chargerRegistreAnomalies(controleId) {
+    const hote = document.querySelector(`[data-registre-anomalies="${controleId}"]`);
+    if (!hote) return;
+    try {
+      const [anomalies, corrections] = await Promise.all([
+        Suivi.listerAnomaliesQualite(controleId),
+        Suivi.listerCorrections(controleId)
+      ]);
+      hote.innerHTML = `
+        <h4 class="mt">Anomalies</h4>
+        ${anomalies.length === 0 ? '<p class="hint">Aucune anomalie signalée.</p>' : anomalies.map((a) => `
+          <div class="suivi-anomalie" data-anomalie-id="${a.id}">
+            <span>${a.dateSignalement} — ${Utils.escapeHtml(a.description)}</span>
+            <span class="badge badge--${a.statut === 'corrigee' ? 'success' : 'warning'}">${a.statut}</span>
+            ${a.statut === 'ouverte' ? '<button class="btn btn--ghost suivi-anomalie-corriger">Marquer corrigée</button>' : ''}
+          </div>
+        `).join('')}
+        <div class="field-row">
+          <div class="field"><label>Nouvelle anomalie</label><input type="text" class="suivi-anomalie-description" placeholder="Décrire l'anomalie"></div>
+        </div>
+        <button class="btn btn--accent suivi-anomalie-ajouter">Signaler</button>
+
+        <h4 class="mt">Historique des corrections</h4>
+        ${corrections.length === 0 ? '<p class="hint">Aucune correction enregistrée.</p>' : corrections.map((c) => `
+          <p class="hint">${c.dateCorrection} — ${Utils.escapeHtml(c.description)}</p>
+        `).join('')}
+        <div class="field-row">
+          <div class="field"><label>Nouvelle correction</label><input type="text" class="suivi-correction-description" placeholder="Décrire la correction"></div>
+        </div>
+        <button class="btn btn--accent suivi-correction-ajouter">Enregistrer</button>
+      `;
+      hote.querySelectorAll('.suivi-anomalie-corriger').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.closest('[data-anomalie-id]').dataset.anomalieId;
+          btn.disabled = true;
+          try {
+            await Suivi.mettreAJourAnomalieQualite(id, 'corrigee');
+            await chargerRegistreAnomalies(controleId);
+          } catch (err) {
+            Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+            btn.disabled = false;
+          }
+        });
+      });
+      const btnAjouterAnomalie = hote.querySelector('.suivi-anomalie-ajouter');
+      btnAjouterAnomalie.addEventListener('click', async () => {
+        const description = hote.querySelector('.suivi-anomalie-description').value.trim();
+        if (!description) {
+          Utils.toast('Décrivez l\'anomalie avant de la signaler.', 'warning');
+          return;
+        }
+        btnAjouterAnomalie.disabled = true;
+        try {
+          await Suivi.signalerAnomalieQualite(controleId, description);
+          Utils.toast('Anomalie signalée.', 'success');
+          await chargerRegistreAnomalies(controleId);
+        } catch (err) {
+          Utils.toast(`Échec du signalement : ${err.message}`, 'danger');
+          btnAjouterAnomalie.disabled = false;
+        }
+      });
+      const btnAjouterCorrection = hote.querySelector('.suivi-correction-ajouter');
+      btnAjouterCorrection.addEventListener('click', async () => {
+        const description = hote.querySelector('.suivi-correction-description').value.trim();
+        if (!description) {
+          Utils.toast('Décrivez la correction avant de l\'enregistrer.', 'warning');
+          return;
+        }
+        btnAjouterCorrection.disabled = true;
+        try {
+          await Suivi.enregistrerCorrection(controleId, description);
+          Utils.toast('Correction enregistrée.', 'success');
+          await chargerRegistreAnomalies(controleId);
+        } catch (err) {
+          Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+          btnAjouterCorrection.disabled = false;
+        }
+      });
+    } catch (err) {
+      hote.innerHTML = `<p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
+    }
+  }
+
   function rendreCartesEtapes(etapes) {
     if (etapes.length === 0) return '<p class="hint">Aucune étape de traitement pour ce dossier.</p>';
     return etapes.map((e) => `
@@ -1047,12 +1130,13 @@ const App = (() => {
 
   function rendreCartesQualite(controles) {
     const historique = controles.length === 0 ? '<p class="hint">Aucun contrôle enregistré.</p>' : controles.map((c) => `
-      <div class="suivi-tache-carte">
+      <div class="suivi-tache-carte" data-controle-id="${c.id}">
         <div class="suivi-tache-carte__entete">
           <b>${LIBELLES_LIVRABLE[c.livrable]}</b>
           <span class="badge badge--${BADGE_RESULTAT_QUALITE[c.resultat]}">${LIBELLES_RESULTAT_QUALITE[c.resultat]}</span>
         </div>
         <p class="hint">${Utils.escapeHtml(c.commentaire) || 'Aucun commentaire.'} — ${c.dateControle}</p>
+        <div class="suivi-registre-host" data-registre-anomalies="${c.id}">Chargement des anomalies…</div>
         <div class="suivi-pieces-jointes-host" data-pieces-jointes="controles_qualite:${c.id}">Chargement des pièces jointes…</div>
       </div>
     `).join('');
@@ -1175,6 +1259,9 @@ const App = (() => {
     document.querySelectorAll('[data-pieces-jointes]').forEach((hote) => {
       const [tableLiee, ligneId] = hote.dataset.piecesJointes.split(':');
       chargerPiecesJointes(tableLiee, ligneId, hote);
+    });
+    document.querySelectorAll('[data-registre-anomalies]').forEach((hote) => {
+      chargerRegistreAnomalies(hote.dataset.registreAnomalies);
     });
 
     document.querySelectorAll('[data-etape-id]').forEach((carte) => {
