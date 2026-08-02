@@ -297,6 +297,81 @@ const Exporter = (() => {
     Utils.toast('Rapport PDF généré.', 'success');
   }
 
+  const LIBELLES_TYPE_CHANGEMENT_EXPORT = {
+    nouvelle_construction: 'Nouvelle construction', extension: 'Extension', demolition: 'Démolition',
+    changement_occupation_sol: "Changement d'occupation du sol",
+    anomalie_cadastrale: 'Anomalie cadastrale', anomalie_fiscale: 'Anomalie fiscale'
+  };
+  const LIBELLES_PRIORITE_EXPORT = { faible: 'Faible', moyenne: 'Moyenne', haute: 'Haute' };
+
+  function exportRapportChangements(dossier, changements, nomDossierReference, stats) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = dessinerEnteteOfficiel(doc, pageW);
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text("RAPPORT D'ANALYSE TERRITORIALE — DETECTION DES CHANGEMENTS", pageW / 2, y, { align: 'center' });
+    y += 22;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+    doc.text(`Zone : ${dossier.nomZone && dossier.nomZone.trim() ? dossier.nomZone.trim() : 'Non renseignée'}`, 40, y);
+    y += 16;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(`Commune : ${dossier.commune && dossier.commune.trim() ? dossier.commune.trim() : 'Non renseignée'}`, 40, y);
+    y += 13;
+    doc.text(`Dossier de référence : ${nomDossierReference || 'Aucun (premier levé)'}`, 40, y);
+    y += 16;
+
+    doc.setTextColor(90);
+    doc.text(`Généré le ${Utils.now()}  •  Drones DCAD`, 40, y);
+    doc.setTextColor(20);
+    y += 22;
+
+    doc.setDrawColor(220); doc.line(40, y, pageW - 40, y); y += 18;
+
+    const section = (titre) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+      doc.text(titre, 40, y); y += 14;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    };
+    const ligneKV = (k, v) => {
+      doc.text(String(k), 46, y);
+      doc.text(String(v), 260, y);
+      y += 13;
+      if (y > 760) { doc.addPage(); y = 48; }
+    };
+
+    section('Synthèse par type');
+    Object.keys(LIBELLES_TYPE_CHANGEMENT_EXPORT).forEach((t) => ligneKV(LIBELLES_TYPE_CHANGEMENT_EXPORT[t], stats.parType[t] || 0));
+    y += 6;
+
+    section('Synthèse par priorité');
+    Object.keys(LIBELLES_PRIORITE_EXPORT).forEach((p) => ligneKV(LIBELLES_PRIORITE_EXPORT[p], stats.parPriorite[p] || 0));
+    y += 6;
+
+    section('Détail des changements');
+    if (changements.length === 0) {
+      doc.text('Aucun changement enregistré.', 46, y); y += 13;
+    }
+    changements.forEach((c) => {
+      ligneKV(`${LIBELLES_TYPE_CHANGEMENT_EXPORT[c.type]} (${LIBELLES_PRIORITE_EXPORT[c.priorite]})`, c.dateDetection);
+      if (c.description) {
+        doc.setFontSize(8.5); doc.setTextColor(90);
+        const lignes = doc.splitTextToSize(c.description, 480);
+        lignes.forEach((ligne) => {
+          doc.text(ligne, 46, y); y += 11;
+          if (y > 760) { doc.addPage(); y = 48; }
+        });
+        doc.setFontSize(9.5); doc.setTextColor(20);
+      }
+    });
+
+    doc.save(`rapport_changements_${Date.now()}.pdf`);
+    Utils.toast('Rapport PDF généré.', 'success');
+  }
+
   function sauvegarderProjet(state) {
     const json = JSON.stringify(state, null, 2);
     Utils.download(`projet_mission_${Date.now()}.json`, json, 'application/json');
@@ -308,5 +383,5 @@ const Exporter = (() => {
     return JSON.parse(text);
   }
 
-  return { exportCSV, exportExcel, exportPDF, sauvegarderProjet, chargerProjet };
+  return { exportCSV, exportExcel, exportPDF, exportRapportChangements, sauvegarderProjet, chargerProjet };
 })();
