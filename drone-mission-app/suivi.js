@@ -113,6 +113,53 @@ const Suivi = (() => {
     };
   }
 
+  /** Convertit une ligne Supabase `mission_equipe` en objet JS. */
+  function mapperMembreEquipeVersJs(row) {
+    return { id: row.id, missionSuiviId: row.mission_suivi_id, agentId: row.agent_id, roleSurMission: row.role_sur_mission };
+  }
+
+  /** Convertit une ligne Supabase `autorisations_mission` en objet JS. */
+  function mapperAutorisationVersJs(row) {
+    return {
+      id: row.id, missionSuiviId: row.mission_suivi_id, intitule: row.intitule,
+      statut: row.statut, dateObtention: row.date_obtention, remarque: row.remarque
+    };
+  }
+
+  /** Convertit une ligne Supabase `registre_incidents_vol` en objet JS. */
+  function mapperIncidentVersJs(row) {
+    return { id: row.id, executionVolId: row.execution_vol_id, dateIncident: row.date_incident, description: row.description, gravite: row.gravite };
+  }
+
+  /** Convertit une ligne Supabase `registre_anomalies_qualite` en objet JS. */
+  function mapperAnomalieVersJs(row) {
+    return { id: row.id, controleId: row.controle_id, description: row.description, dateSignalement: row.date_signalement, statut: row.statut };
+  }
+
+  /** Convertit une ligne Supabase `historique_corrections` en objet JS. */
+  function mapperCorrectionVersJs(row) {
+    return { id: row.id, controleId: row.controle_id, dateCorrection: row.date_correction, description: row.description, corrigePar: row.corrige_par };
+  }
+
+  /** Convertit une ligne Supabase `pieces_jointes` en objet JS. */
+  function mapperPieceJointeVersJs(row) {
+    return {
+      id: row.id, tableLiee: row.table_liee, ligneId: row.ligne_id, typeFichier: row.type_fichier,
+      cheminStorage: row.chemin_storage, nomOriginal: row.nom_original, uploadedBy: row.uploaded_by, uploadedAt: row.uploaded_at
+    };
+  }
+
+  /** Indicateurs de charge : nombre de drones/agents actuellement affectés à des missions non terminées. */
+  function calculerIndicateursCharge(dossiers) {
+    const dossiersActifs = dossiers.filter((d) => d.statutGlobal !== 'terminee');
+    const dronesUniques = new Set();
+    dossiersActifs.forEach((d) => (d.dronesAffectes || []).forEach((id) => dronesUniques.add(id)));
+    return {
+      missionsActives: dossiersActifs.length,
+      dronesAffectes: dronesUniques.size
+    };
+  }
+
   /** % d'avancement d'un dossier = (vols exécutés + étapes terminées) / (total vols + total étapes). */
   function calculerAvancementDossier(executions, etapes) {
     const totalTaches = executions.length + etapes.length;
@@ -314,7 +361,9 @@ const Suivi = (() => {
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
-    mapperEtapeVersJs, mapperControleVersJs, calculerAvancementDossier, calculerStatsTableauDeBord,
+    mapperEtapeVersJs, mapperControleVersJs,
+    mapperMembreEquipeVersJs, mapperAutorisationVersJs, mapperIncidentVersJs, mapperAnomalieVersJs, mapperCorrectionVersJs, mapperPieceJointeVersJs, calculerIndicateursCharge,
+    calculerAvancementDossier, calculerStatsTableauDeBord,
     connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
     creerDossierMission, listerDossiers, recupererDossier,
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord
