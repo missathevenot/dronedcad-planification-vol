@@ -1311,23 +1311,30 @@ const App = (() => {
   }
 
   let changementGeometrieEnAttente = null;
+  let changementsActuelsPourRapport = [];
 
   async function chargerListeEtCarteChangements(dossierId, zoneId, hoteListe) {
     try {
-      const changements = await Suivi.listerChangements(dossierId);
       CartoChangements.initMap('changementsCarte');
-      CartoChangements.afficherChangements(changements);
-      CartoChangements.invalidateSize();
-      renderListeChangements(hoteListe, changements);
-      await chargerDossiersReferencePourChangements(zoneId, dossierId);
-      bindFormulaireChangements(dossierId, zoneId, hoteListe, changements);
+      bindFormulaireChangements(dossierId, zoneId, hoteListe);
+      await rafraichirChangements(dossierId, zoneId, hoteListe);
     } catch (err) {
       hoteListe.innerHTML = `<h3>Changements enregistrés</h3><p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
       Utils.toast(`Échec du chargement des changements : ${err.message}`, 'danger');
     }
   }
 
-  function bindFormulaireChangements(dossierId, zoneId, hoteListe, changementsActuels) {
+  async function rafraichirChangements(dossierId, zoneId, hoteListe) {
+    const changements = await Suivi.listerChangements(dossierId);
+    changementsActuelsPourRapport = changements;
+    CartoChangements.afficherChangements(changements);
+    CartoChangements.invalidateSize();
+    renderListeChangements(hoteListe, changements);
+    await chargerDossiersReferencePourChangements(zoneId, dossierId);
+    return changements;
+  }
+
+  function bindFormulaireChangements(dossierId, zoneId, hoteListe) {
     const btnDessiner = document.getElementById('btnChangementsDessiner');
     const formulaireHost = document.getElementById('changementsFormulaireHost');
     const btnEnregistrer = document.getElementById('btnChangementsEnregistrer');
@@ -1372,9 +1379,12 @@ const App = (() => {
         });
         Utils.toast('Changement enregistré.', 'success');
         changementGeometrieEnAttente = null;
-        await chargerListeEtCarteChangements(dossierId, zoneId, hoteListe);
+        formulaireHost.classList.add('is-hidden');
+        document.getElementById('changementsNouvelleDescription').value = '';
+        await rafraichirChangements(dossierId, zoneId, hoteListe);
       } catch (err) {
         Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+      } finally {
         btnEnregistrer.disabled = false;
       }
     });
@@ -1385,8 +1395,8 @@ const App = (() => {
         try {
           const select = document.getElementById('changementsDossierReference');
           const nomReference = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : null;
-          const stats = Suivi.calculerStatsChangements(changementsActuels);
-          Exporter.exportRapportChangements(suiviDossierActuel.dossier, changementsActuels, nomReference, stats);
+          const stats = Suivi.calculerStatsChangements(changementsActuelsPourRapport);
+          Exporter.exportRapportChangements(suiviDossierActuel.dossier, changementsActuelsPourRapport, nomReference, stats);
         } catch (err) {
           Utils.toast(`Échec de la génération du rapport : ${err.message}`, 'danger');
         } finally {
