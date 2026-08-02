@@ -23,7 +23,7 @@ const Suivi = (() => {
   // Fonctions pures (testables)
   // ------------------------------------------------------------------
 
-  /** Construit les lignes à insérer (dossier + vols + étapes) à partir d'un projet DroneDCAD. */
+  /** Construit les lignes à insérer (dossier + vols + étapes) à partir d'un projet Drones DCAD. */
   function construireDossierDepuisProjet({ nomZone, commune, superficieHa, nombreMissionsPrevues, agentReferentId, donneesPlanification, zoneId, dronesAffectes, budgetPrevisionnelFcfa }) {
     const dossier = {
       nom_zone: nomZone,
@@ -269,7 +269,7 @@ const Suivi = (() => {
     return { id: data.id, nomComplet: data.nom_complet, role: data.role, statut: data.statut };
   }
 
-  /** Crée un dossier de suivi (et ses vols/étapes) à partir d'un projet DroneDCAD planifié. */
+  /** Crée un dossier de suivi (et ses vols/étapes) à partir d'un projet Drones DCAD planifié. */
   async function creerDossierMission(params) {
     const { dossier, executions, etapes } = construireDossierDepuisProjet(params);
     const sb = initClient();

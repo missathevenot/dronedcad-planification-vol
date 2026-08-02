@@ -1,7 +1,7 @@
 {
-  "name": "DroneDCAD Planification Vol — Planification de missions drone",
-  "short_name": "DroneDCAD Planification Vol",
-  "description": "Planification de missions photogrammétriques DJI Matrice 350 RTK + Zenmuse P1 : calculs automatiques, cartographie des lignes de vol, tableau de missions et export de rapports.",
+  "name": "Drones DCAD — Gestion des levés par drones et d'élargissement de l'assiette de l'impôt foncier",
+  "short_name": "Drones DCAD",
+  "description": "Gestion des levés par drones et d'élargissement de l'assiette de l'impôt foncier — DJI Matrice 350 RTK + Zenmuse P1 : calculs automatiques, cartographie des lignes de vol, tableau de missions et export de rapports.",
   "id": "/",
   "start_url": "./index.html",
   "scope": "./",

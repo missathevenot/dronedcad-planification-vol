@@ -1,7 +1,7 @@
 /**
  * utils.js
  * Fonctions utilitaires génériques : formatage, conversions, notifications, id.
- * Application de planification de missions drone — DJI Matrice 350 RTK / Zenmuse P1
+ * Application Drones DCAD — gestion des levés par drones et d'élargissement de l'assiette de l'impôt foncier (DJI Matrice 350 RTK / Zenmuse P1)
  */
 
 'use strict';

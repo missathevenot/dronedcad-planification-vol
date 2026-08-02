@@ -1,6 +1,6 @@
 /**
  * sw.js
- * Service worker de l'application DroneDCAD Planification Vol.
+ * Service worker de l'application Drones DCAD.
  * Stratégie :
  *  - App shell (HTML/CSS/JS/libs/icônes) : "cache d'abord", pré-mis en cache à l'installation.
  *    Ce sont ces fichiers qui garantissent que l'application (formulaires, calculs,
@@ -12,7 +12,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'dronedcad-planification-vol-v2';
+const CACHE_VERSION = 'drones-dcad-v3';
 const APP_SHELL = [
   './',
   './index.html',

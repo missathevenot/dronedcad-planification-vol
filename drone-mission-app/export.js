@@ -46,7 +46,7 @@ const Exporter = (() => {
   function resumeVersLignes(r, p) {
     const pcType = p.performance.types[p.performance.typeSelectionne] || p.performance.types.portable;
     return [
-      ['Rapport de mission — Planification photogrammétrique drone'],
+      ['Rapport de mission — Gestion des levés par drones et d\'élargissement de l\'assiette de l\'impôt foncier'],
       ['Généré le', Utils.now()],
       [],
       ['Zone'],
@@ -184,7 +184,7 @@ const Exporter = (() => {
 
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
     doc.setTextColor(90);
-    doc.text(`Généré le ${Utils.now()}  •  ${params.drone.modele}  +  ${params.camera.modele}  •  DroneDCAD Planification Vol`, 40, y);
+    doc.text(`Généré le ${Utils.now()}  •  ${params.drone.modele}  +  ${params.camera.modele}  •  Drones DCAD`, 40, y);
     doc.setTextColor(20);
     y += 22;
 
