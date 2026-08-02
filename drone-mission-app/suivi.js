@@ -555,7 +555,7 @@ const Suivi = (() => {
     return mapperAnomalieVersJs(data);
   }
 
-  /** Marque une anomalie comme corrigée. */
+  /** Met à jour le statut d'une anomalie (ex. 'corrigee'). */
   async function mettreAJourAnomalieQualite(id, statut) {
     const sb = initClient();
     const { data, error } = await sb.from('registre_anomalies_qualite').update({ statut }).eq('id', id).select().single();
