@@ -422,7 +422,7 @@ const Suivi = (() => {
   /** Liste les autorisations à solliciter/obtenues pour un dossier. */
   async function listerAutorisations(missionSuiviId) {
     const sb = initClient();
-    const { data, error } = await sb.from('autorisations_mission').select('*').eq('mission_suivi_id', missionSuiviId).order('id');
+    const { data, error } = await sb.from('autorisations_mission').select('*').eq('mission_suivi_id', missionSuiviId);
     if (error) throw new Error(`Échec du chargement des autorisations : ${error.message}`);
     return data.map(mapperAutorisationVersJs);
   }
@@ -439,7 +439,7 @@ const Suivi = (() => {
     return mapperAutorisationVersJs(data);
   }
 
-  /** Met à jour le statut/date d'obtention/remarque d'une autorisation. */
+  /** Met à jour une autorisation. `donnees` peut contenir statut/dateObtention/remarque. */
   async function mettreAJourAutorisation(id, donnees) {
     const sb = initClient();
     const patch = {};
