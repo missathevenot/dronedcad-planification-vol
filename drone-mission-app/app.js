@@ -1406,6 +1406,61 @@ const App = (() => {
     }
   }
 
+  function renderListeChangements(hoteListe, changements, filtres = {}) {
+    const filtres_actuels = { type: filtres.type || '', priorite: filtres.priorite || '' };
+    const visibles = Suivi.filtrerChangements(changements, filtres_actuels);
+    hoteListe.innerHTML = `
+      <h3>Changements enregistrés</h3>
+      <div class="field-row">
+        <div class="field"><label>Type</label>
+          <select id="changementsFiltreType">
+            <option value="">Tous</option>
+            ${Object.keys(LIBELLES_TYPE_CHANGEMENT).map((v) => `<option value="${v}" ${v === filtres_actuels.type ? 'selected' : ''}>${LIBELLES_TYPE_CHANGEMENT[v]}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Priorité</label>
+          <select id="changementsFiltrePriorite">
+            <option value="">Toutes</option>
+            ${Object.keys(LIBELLES_PRIORITE_CHANGEMENT).map((v) => `<option value="${v}" ${v === filtres_actuels.priorite ? 'selected' : ''}>${LIBELLES_PRIORITE_CHANGEMENT[v]}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${visibles.length === 0 ? '<p class="hint">Aucun changement pour ce filtre.</p>' : visibles.map((c) => `
+        <div class="suivi-tache-carte" data-changement-id="${c.id}">
+          <div class="suivi-tache-carte__entete">
+            <b>${LIBELLES_TYPE_CHANGEMENT[c.type]}</b>
+            <span class="badge badge--${BADGE_PRIORITE_CHANGEMENT[c.priorite]}">${LIBELLES_PRIORITE_CHANGEMENT[c.priorite]}</span>
+          </div>
+          <p class="hint">${Utils.escapeHtml(c.description) || 'Aucune description.'} — ${c.dateDetection}</p>
+          <button class="btn btn--ghost suivi-changement-supprimer">Supprimer</button>
+        </div>
+      `).join('')}
+    `;
+
+    const selectType = document.getElementById('changementsFiltreType');
+    const selectPriorite = document.getElementById('changementsFiltrePriorite');
+    selectType.addEventListener('change', () => renderListeChangements(hoteListe, changements, { type: selectType.value, priorite: selectPriorite.value }));
+    selectPriorite.addEventListener('change', () => renderListeChangements(hoteListe, changements, { type: selectType.value, priorite: selectPriorite.value }));
+
+    hoteListe.querySelectorAll('.suivi-changement-supprimer').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const carte = btn.closest('[data-changement-id]');
+        const id = carte.dataset.changementId;
+        btn.disabled = true;
+        try {
+          await Suivi.supprimerChangement(id);
+          Utils.toast('Changement supprimé.', 'success');
+          const dossierId = suiviDossierActuel.dossier.id;
+          const zoneId = suiviDossierActuel.dossier.zoneId;
+          await rafraichirChangements(dossierId, zoneId, hoteListe);
+        } catch (err) {
+          Utils.toast(`Échec de la suppression : ${err.message}`, 'danger');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
   function bindFormulairesDetailSuivi() {
     document.querySelectorAll('[data-execution-id]').forEach((carte) => {
       const btn = carte.querySelector('.suivi-vol-enregistrer');
@@ -1455,6 +1510,11 @@ const App = (() => {
     });
     document.querySelectorAll('[data-registre-anomalies]').forEach((hote) => {
       chargerRegistreAnomalies(hote.dataset.registreAnomalies);
+    });
+
+    document.querySelectorAll('[data-changements-liste]').forEach((hote) => {
+      const [dossierId, zoneId] = hote.dataset.changementsListe.split(':');
+      chargerListeEtCarteChangements(dossierId, zoneId || null, hote);
     });
 
     document.querySelectorAll('[data-etape-id]').forEach((carte) => {
