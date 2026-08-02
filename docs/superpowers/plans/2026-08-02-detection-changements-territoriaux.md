@@ -648,24 +648,21 @@ git commit -m "feat: rendu du sous-onglet Détection des changements et sélecte
 **Files:**
 - Modify: `drone-mission-app/app.js`
 
-**Contexte :** `chargerListeEtCarteChangements` (créée dans cette tâche) est la fonction "chef d'orchestre" du sous-onglet : elle recharge les changements depuis Supabase, réinitialise la mini-carte (`CartoChangements.initMap`), l'affiche, met à jour la liste (rendue dans la Task 9), et rebranche tous les formulaires. Elle est appelée une première fois depuis `bindFormulairesDetailSuivi` (câblée dans cette tâche), puis à nouveau après chaque sauvegarde/suppression pour tout rafraîchir — même pattern que `chargerRegistreAnomalies`.
+**Contexte :** `chargerListeEtCarteChangements` (créée dans cette tâche) est appelée une seule fois, depuis `bindFormulairesDetailSuivi` (câblée dans cette tâche) — elle initialise la mini-carte et attache les écouteurs du formulaire (dessiner/annuler/enregistrer/rapport) sur des boutons DOM persistants, rendus une seule fois par `rendreSousOngletChangements` (Task 7) et jamais recréés ensuite. Recharger les changements après une sauvegarde/suppression passe donc par une fonction séparée et plus légère, `rafraichirChangements` (Step 1bis), qui ne touche ni la carte (`initMap`) ni le formulaire — seulement la liste, l'affichage des polygones existants et le sélecteur de dossier de référence. Rappeler `bindFormulaireChangements` à chaque sauvegarde (comme le fait `chargerRegistreAnomalies` pour son propre sous-onglet) réattacherait un jeu d'écouteurs supplémentaire sur ces mêmes boutons à chaque fois, d'où l'accumulation à éviter.
 
-- [ ] **Step 1: Ajouter la variable de geométrie en attente et la fonction principale**
+- [ ] **Step 1: Ajouter les variables d'état et la fonction principale**
 
 Après `chargerDossiersReferencePourChangements` (Task 7), ajouter :
 
 ```js
   let changementGeometrieEnAttente = null;
+  let changementsActuelsPourRapport = [];
 
   async function chargerListeEtCarteChangements(dossierId, zoneId, hoteListe) {
     try {
-      const changements = await Suivi.listerChangements(dossierId);
       CartoChangements.initMap('changementsCarte');
-      CartoChangements.afficherChangements(changements);
-      CartoChangements.invalidateSize();
-      renderListeChangements(hoteListe, changements);
-      await chargerDossiersReferencePourChangements(zoneId, dossierId);
-      bindFormulaireChangements(dossierId, zoneId, hoteListe, changements);
+      bindFormulaireChangements(dossierId, zoneId, hoteListe);
+      await rafraichirChangements(dossierId, zoneId, hoteListe);
     } catch (err) {
       hoteListe.innerHTML = `<h3>Changements enregistrés</h3><p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
       Utils.toast(`Échec du chargement des changements : ${err.message}`, 'danger');
@@ -673,12 +670,28 @@ Après `chargerDossiersReferencePourChangements` (Task 7), ajouter :
   }
 ```
 
-- [ ] **Step 2: Câbler le bouton "Dessiner un changement" et le formulaire d'enregistrement**
+- [ ] **Step 1bis: Ajouter `rafraichirChangements` (rechargement léger, sans réinitialiser la carte ni le formulaire)**
 
-Ajouter, juste après `chargerListeEtCarteChangements` :
+Juste après `chargerListeEtCarteChangements`, ajouter :
 
 ```js
-  function bindFormulaireChangements(dossierId, zoneId, hoteListe, changementsActuels) {
+  async function rafraichirChangements(dossierId, zoneId, hoteListe) {
+    const changements = await Suivi.listerChangements(dossierId);
+    changementsActuelsPourRapport = changements;
+    CartoChangements.afficherChangements(changements);
+    CartoChangements.invalidateSize();
+    renderListeChangements(hoteListe, changements);
+    await chargerDossiersReferencePourChangements(zoneId, dossierId);
+    return changements;
+  }
+```
+
+- [ ] **Step 2: Câbler le bouton "Dessiner un changement" et le formulaire d'enregistrement**
+
+Ajouter, juste après `rafraichirChangements` :
+
+```js
+  function bindFormulaireChangements(dossierId, zoneId, hoteListe) {
     const btnDessiner = document.getElementById('btnChangementsDessiner');
     const formulaireHost = document.getElementById('changementsFormulaireHost');
     const btnEnregistrer = document.getElementById('btnChangementsEnregistrer');
@@ -723,9 +736,12 @@ Ajouter, juste après `chargerListeEtCarteChangements` :
         });
         Utils.toast('Changement enregistré.', 'success');
         changementGeometrieEnAttente = null;
-        await chargerListeEtCarteChangements(dossierId, zoneId, hoteListe);
+        formulaireHost.classList.add('is-hidden');
+        document.getElementById('changementsNouvelleDescription').value = '';
+        await rafraichirChangements(dossierId, zoneId, hoteListe);
       } catch (err) {
         Utils.toast(`Échec de l'enregistrement : ${err.message}`, 'danger');
+      } finally {
         btnEnregistrer.disabled = false;
       }
     });
@@ -736,8 +752,8 @@ Ajouter, juste après `chargerListeEtCarteChangements` :
         try {
           const select = document.getElementById('changementsDossierReference');
           const nomReference = select.selectedIndex > 0 ? select.options[select.selectedIndex].text : null;
-          const stats = Suivi.calculerStatsChangements(changementsActuels);
-          Exporter.exportRapportChangements(suiviDossierActuel.dossier, changementsActuels, nomReference, stats);
+          const stats = Suivi.calculerStatsChangements(changementsActuelsPourRapport);
+          Exporter.exportRapportChangements(suiviDossierActuel.dossier, changementsActuelsPourRapport, nomReference, stats);
         } catch (err) {
           Utils.toast(`Échec de la génération du rapport : ${err.message}`, 'danger');
         } finally {
@@ -747,6 +763,11 @@ Ajouter, juste après `chargerListeEtCarteChangements` :
     }
   }
 ```
+
+Points importants (corrigés après revue de code d'une première version de cette tâche) :
+- `bindFormulaireChangements` n'est appelée qu'une seule fois, depuis `chargerListeEtCarteChangements` (chargement initial du sous-onglet) — jamais depuis `rafraichirChangements`. Les boutons `btnDessiner`/`btnEnregistrer`/`btnAnnuler`/`btnRapport` sont rendus une seule fois par `rendreSousOngletChangements` (Task 7) et ne sont jamais recréés ; les rappeler à chaque rafraîchissement accumulerait des écouteurs dupliqués sur ces mêmes nœuds DOM persistants.
+- `btnEnregistrer.disabled` est remis à `false` dans un bloc `finally`, pas seulement dans le `catch` — sans cela, le bouton resterait désactivé indéfiniment après une sauvegarde réussie (aucun re-rendu complet ne recrée ce bouton pour le "réactiver" implicitement).
+- `changementsActuelsPourRapport` est une variable de niveau module, mise à jour à chaque `rafraichirChangements`, plutôt qu'un paramètre figé au moment du premier `bindFormulaireChangements` — sinon le bouton rapport utiliserait toujours la toute première liste chargée, jamais les changements ajoutés/supprimés depuis.
 
 Note : `renderListeChangements` est ajoutée à la Task 9 — cette tâche seule provoquerait une `ReferenceError` en navigateur (mais pas d'échec des tests Node), état intermédiaire accepté comme dans la Task 6.
 
@@ -765,6 +786,8 @@ git commit -m "feat: dessin et enregistrement d'un changement territorial sur la
 
 **Files:**
 - Modify: `drone-mission-app/app.js`
+
+**Contexte :** le bouton de suppression appelle `rafraichirChangements` (ajoutée en Task 8), pas `chargerListeEtCarteChangements` — pour la même raison que le formulaire d'enregistrement (Task 8) : `chargerListeEtCarteChangements` réinitialise la carte et rappelle `bindFormulaireChangements`, ce qui accumulerait des écouteurs sur les boutons persistants du formulaire à chaque suppression. `renderListeChangements` elle-même reste sûre à rappeler autant de fois que nécessaire (filtres inclus) car elle remplace entièrement son propre `hoteListe.innerHTML` à chaque appel — ses propres écouteurs (filtres, boutons Supprimer) sont donc toujours attachés à des nœuds fraîchement créés, jamais accumulés.
 
 - [ ] **Step 1: Ajouter `renderListeChangements`**
 
@@ -817,7 +840,7 @@ Après `bindFormulaireChangements` (Task 8), ajouter :
           Utils.toast('Changement supprimé.', 'success');
           const dossierId = suiviDossierActuel.dossier.id;
           const zoneId = suiviDossierActuel.dossier.zoneId;
-          await chargerListeEtCarteChangements(dossierId, zoneId, hoteListe);
+          await rafraichirChangements(dossierId, zoneId, hoteListe);
         } catch (err) {
           Utils.toast(`Échec de la suppression : ${err.message}`, 'danger');
           btn.disabled = false;
