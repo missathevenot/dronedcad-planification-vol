@@ -80,7 +80,8 @@ const Suivi = (() => {
       photosReelles: row.photos_reelles,
       descriptionIncident: row.description_incident,
       telepiloteId: row.telepilote_id,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      couvertureReelle: row.couverture_reelle
     };
   }
 
@@ -458,6 +459,34 @@ const Suivi = (() => {
     if (error) throw new Error(`Échec de la suppression de l'autorisation : ${error.message}`);
   }
 
+  /** Liste les incidents enregistrés pour un vol. */
+  async function listerIncidentsVol(executionVolId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('registre_incidents_vol').select('*').eq('execution_vol_id', executionVolId).order('date_incident', { ascending: false });
+    if (error) throw new Error(`Échec du chargement des incidents : ${error.message}`);
+    return data.map(mapperIncidentVersJs);
+  }
+
+  /** Enregistre un nouvel incident pour un vol. */
+  async function enregistrerIncidentVol(executionVolId, donnees) {
+    const sb = initClient();
+    const ligne = {
+      execution_vol_id: executionVolId,
+      description: donnees.description,
+      gravite: donnees.gravite || 'mineure'
+    };
+    const { data, error } = await sb.from('registre_incidents_vol').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de l'enregistrement de l'incident : ${error.message}`);
+    return mapperIncidentVersJs(data);
+  }
+
+  /** Met à jour la couverture réellement survolée d'un vol (géométrie, même format que zones.geometrie). */
+  async function mettreAJourCouvertureReelle(executionVolId, geometrie) {
+    const sb = initClient();
+    const { error } = await sb.from('executions_vol').update({ couverture_reelle: geometrie, updated_at: new Date().toISOString() }).eq('id', executionVolId);
+    if (error) throw new Error(`Échec de l'enregistrement de la couverture réelle : ${error.message}`);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -468,7 +497,8 @@ const Suivi = (() => {
     creerDossierMission, listerDossiers, recupererDossier,
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord,
     listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe,
-    listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation
+    listerAutorisations, creerAutorisation, mettreAJourAutorisation, supprimerAutorisation,
+    listerIncidentsVol, enregistrerIncidentVol, mettreAJourCouvertureReelle
   };
 })();
 
