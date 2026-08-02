@@ -954,6 +954,69 @@ const App = (() => {
     }
   }
 
+  async function chargerPiecesJointes(tableLiee, ligneId, hote) {
+    try {
+      const pieces = await Suivi.listerPiecesJointes(tableLiee, ligneId);
+      hote.innerHTML = `
+        <h4 class="mt">Pièces jointes</h4>
+        ${pieces.length === 0 ? '<p class="hint">Aucun fichier.</p>' : pieces.map((p) => `
+          <div class="suivi-piece-jointe" data-piece-id="${p.id}" data-chemin="${Utils.escapeHtml(p.cheminStorage)}">
+            <span>${Utils.escapeHtml(p.nomOriginal)}</span>
+            <button class="btn btn--ghost suivi-piece-telecharger">Télécharger</button>
+            <button class="btn btn--ghost suivi-piece-supprimer">Supprimer</button>
+          </div>
+        `).join('')}
+        <label class="btn btn--ghost btn--file">
+          ⭱ Ajouter un fichier
+          <input type="file" class="suivi-piece-fichier" hidden>
+        </label>
+      `;
+      hote.querySelectorAll('.suivi-piece-telecharger').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const chemin = btn.closest('[data-chemin]').dataset.chemin;
+          btn.disabled = true;
+          try {
+            const url = await Suivi.obtenirUrlSigneePieceJointe(chemin);
+            window.open(url, '_blank');
+          } catch (err) {
+            Utils.toast(`Échec du téléchargement : ${err.message}`, 'danger');
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+      hote.querySelectorAll('.suivi-piece-supprimer').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.closest('[data-piece-id]').dataset.pieceId;
+          btn.disabled = true;
+          try {
+            await Suivi.supprimerPieceJointe(id);
+            await chargerPiecesJointes(tableLiee, ligneId, hote);
+          } catch (err) {
+            Utils.toast(`Échec de la suppression : ${err.message}`, 'danger');
+            btn.disabled = false;
+          }
+        });
+      });
+      const inputFichier = hote.querySelector('.suivi-piece-fichier');
+      inputFichier.addEventListener('change', async () => {
+        const fichier = inputFichier.files[0];
+        if (!fichier) return;
+        inputFichier.disabled = true;
+        try {
+          await Suivi.uploaderPieceJointe(tableLiee, ligneId, fichier, fichier.type || 'document');
+          Utils.toast('Fichier ajouté.', 'success');
+          await chargerPiecesJointes(tableLiee, ligneId, hote);
+        } catch (err) {
+          Utils.toast(`Échec du téléversement : ${err.message}`, 'danger');
+          inputFichier.disabled = false;
+        }
+      });
+    } catch (err) {
+      hote.innerHTML = `<p class="hint">Échec du chargement des pièces jointes : ${Utils.escapeHtml(err.message)}</p>`;
+    }
+  }
+
   function rendreCartesEtapes(etapes) {
     if (etapes.length === 0) return '<p class="hint">Aucune étape de traitement pour ce dossier.</p>';
     return etapes.map((e) => `
@@ -976,6 +1039,7 @@ const App = (() => {
         </div>
         <div class="field"><label>Taille produite (Mo)</label><input type="number" class="suivi-etape-taille" value="${e.tailleReelleMo ?? ''}"></div>
         <button class="btn btn--accent suivi-etape-enregistrer">Enregistrer</button>
+        <div class="suivi-pieces-jointes-host" data-pieces-jointes="etapes_traitement:${e.id}">Chargement des pièces jointes…</div>
       </div>
     `).join('');
   }
@@ -988,6 +1052,7 @@ const App = (() => {
           <span class="badge badge--${BADGE_RESULTAT_QUALITE[c.resultat]}">${LIBELLES_RESULTAT_QUALITE[c.resultat]}</span>
         </div>
         <p class="hint">${Utils.escapeHtml(c.commentaire) || 'Aucun commentaire.'} — ${c.dateControle}</p>
+        <div class="suivi-pieces-jointes-host" data-pieces-jointes="controles_qualite:${c.id}">Chargement des pièces jointes…</div>
       </div>
     `).join('');
 
