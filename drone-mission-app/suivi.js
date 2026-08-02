@@ -312,7 +312,7 @@ const Suivi = (() => {
     return data.map(mapperDossierVersJs);
   }
 
-  /** Récupère un dossier complet (infos + vols + étapes + contrôles qualité). */
+  /** Récupère un dossier complet (infos + vols + étapes + contrôles qualité + équipe + autorisations). */
   async function recupererDossier(id) {
     const sb = initClient();
     const [{ data: dossier, error: e1 }, { data: executions, error: e2 },
@@ -323,7 +323,7 @@ const Suivi = (() => {
       sb.from('etapes_traitement').select('*').eq('mission_suivi_id', id),
       sb.from('controles_qualite').select('*').eq('mission_suivi_id', id),
       sb.from('mission_equipe').select('*').eq('mission_suivi_id', id),
-      sb.from('autorisations_mission').select('*').eq('mission_suivi_id', id).order('id')
+      sb.from('autorisations_mission').select('*').eq('mission_suivi_id', id)
     ]);
     if (e1) throw new Error(`Échec du chargement du dossier : ${e1.message}`);
     if (e2 || e3 || e4 || e5 || e6) throw new Error('Échec du chargement du détail du dossier.');
