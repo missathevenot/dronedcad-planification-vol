@@ -58,7 +58,6 @@ const App = (() => {
     remplirFormulaireDepuisEtat();
     genererZoneTest(); // zone de démonstration au chargement
     recalculer();
-    zonesChargeesFait = true;
     initialiserOngletZones();
   }
 
@@ -625,7 +624,6 @@ const App = (() => {
   // ------------------------------------------------------------------
   // Zone & Cartographie — bibliothèque de zones partagées
   // ------------------------------------------------------------------
-  let zonesChargeesFait = false;
   let zonesEnCache = [];
 
   async function initialiserOngletZones() {
