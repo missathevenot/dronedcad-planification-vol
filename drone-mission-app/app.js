@@ -46,7 +46,6 @@ const App = (() => {
     bindScenarios();
     bindMeteo();
     bindEnvoiVersSuivi();
-    bindSuivi();
     bindFiltresSuivi();
     bindSelectionZone();
     bindEnregistrerSupprimerZone();
@@ -521,23 +520,16 @@ const App = (() => {
       Utils.toast('La configuration actuelle ne permet aucun vol (vérifiez les paramètres batteries). Corrigez avant d\'envoyer vers le suivi.', 'warning');
       return;
     }
-    const session = await Suivi.sessionActuelle();
-    if (!session) {
-      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant d\'envoyer un dossier.', 'warning');
-      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
-      return;
-    }
     const btn = document.getElementById('btnEnvoyerVersSuivi');
     btn.disabled = true;
     Utils.toast('Envoi du dossier vers le suivi…', 'info');
     try {
-      const profil = await Suivi.profilConnecte();
       await Suivi.creerDossierMission({
         nomZone: state.zone.nom || 'Zone sans nom',
         commune: state.zone.commune,
         superficieHa: dernierResultats.surfaceHa,
         nombreMissionsPrevues: dernierResultats.nbMissionsAutomatiques,
-        agentReferentId: profil ? profil.id : null,
+        agentReferentId: null,
         donneesPlanification: { etat: state, resultats: dernierResultats },
         zoneId: state.zone.id
       });
@@ -550,72 +542,9 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------
-  // Suivi post levé par drone — connexion et navigation de l'onglet
+  // Suivi post levé par drone — navigation de l'onglet (accès libre, sans authentification)
   // ------------------------------------------------------------------
-  function bindSuivi() {
-    document.getElementById('btnSuiviConnexion').addEventListener('click', connecterSuivi);
-    document.getElementById('btnSuiviDeconnexion').addEventListener('click', deconnecterSuivi);
-  }
-
   async function initialiserOngletSuivi() {
-    const session = await Suivi.sessionActuelle();
-    if (session) {
-      await afficherContenuSuiviConnecte();
-    } else {
-      document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
-      document.getElementById('suiviContenuHost').classList.add('is-hidden');
-    }
-  }
-
-  async function connecterSuivi() {
-    const email = document.getElementById('suiviEmail').value.trim();
-    const motDePasse = document.getElementById('suiviMotDePasse').value;
-    const erreurHost = document.getElementById('suiviConnexionErreur');
-    erreurHost.classList.add('is-hidden');
-    if (!email || !motDePasse) {
-      erreurHost.textContent = 'Renseignez votre email et votre mot de passe.';
-      erreurHost.classList.remove('is-hidden');
-      return;
-    }
-    const btn = document.getElementById('btnSuiviConnexion');
-    btn.disabled = true;
-    try {
-      await Suivi.connexion(email, motDePasse);
-      document.getElementById('suiviMotDePasse').value = '';
-      await afficherContenuSuiviConnecte();
-    } catch (err) {
-      erreurHost.textContent = err.message;
-      erreurHost.classList.remove('is-hidden');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  async function deconnecterSuivi() {
-    const btn = document.getElementById('btnSuiviDeconnexion');
-    btn.disabled = true;
-    try {
-      await Suivi.deconnexion();
-      document.getElementById('suiviEmail').value = '';
-      document.getElementById('suiviMotDePasse').value = '';
-      document.getElementById('suiviConnexionHost').classList.remove('is-hidden');
-      document.getElementById('suiviContenuHost').classList.add('is-hidden');
-      document.getElementById('suiviZoneCommune').value = '';
-      document.getElementById('suiviZoneNom').value = '';
-      document.getElementById('suiviDossierSelecteurHost').classList.add('is-hidden');
-      document.getElementById('suiviZoneAucunDossier').classList.add('is-hidden');
-      document.getElementById('suiviDetailHost').classList.add('is-hidden');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  async function afficherContenuSuiviConnecte() {
-    document.getElementById('suiviConnexionHost').classList.add('is-hidden');
-    document.getElementById('suiviContenuHost').classList.remove('is-hidden');
-    const profil = await Suivi.profilConnecte();
-    document.getElementById('suiviUtilisateurConnecte').textContent =
-      profil ? `Connecté : ${profil.nomComplet} (${profil.role})` : 'Connecté';
     peuplerCommunesSuivi();
     peuplerDatalistZonesSuivi();
   }
@@ -738,12 +667,6 @@ const App = (() => {
       Utils.toast('Donnez un nom à la zone avant de l\'enregistrer.', 'warning');
       return;
     }
-    const session = await Suivi.sessionActuelle();
-    if (!session) {
-      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant d\'enregistrer une zone.', 'warning');
-      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
-      return;
-    }
     const btn = document.getElementById('btnEnregistrerZone');
     btn.disabled = true;
     try {
@@ -778,12 +701,6 @@ const App = (() => {
   async function supprimerZoneActuelle() {
     if (!state.zone.id) {
       Utils.toast('Aucune zone de la bibliothèque n\'est chargée.', 'warning');
-      return;
-    }
-    const session = await Suivi.sessionActuelle();
-    if (!session) {
-      Utils.toast('Connectez-vous dans l\'onglet « Suivi post levé par drone » avant de supprimer une zone.', 'warning');
-      document.querySelector('.nav__item[data-target="panel-suivi"]').click();
       return;
     }
     const btn = document.getElementById('btnSupprimerZone');
@@ -1001,6 +918,7 @@ const App = (() => {
           btn.disabled = true;
           try {
             await Suivi.supprimerPieceJointe(id);
+            Utils.toast('Pièce jointe supprimée.', 'success');
             await chargerPiecesJointes(tableLiee, ligneId, hote);
           } catch (err) {
             Utils.toast(`Échec de la suppression : ${err.message}`, 'danger');
@@ -1565,6 +1483,7 @@ const App = (() => {
         btn.disabled = true;
         try {
           await Suivi.retirerMembreEquipe(carte.dataset.membreId);
+          Utils.toast('Membre retiré de l\'équipe.', 'success');
           await afficherDetailSuivi(suiviDossierActuel.dossier.id);
         } catch (err) {
           Utils.toast(`Échec du retrait : ${err.message}`, 'danger');

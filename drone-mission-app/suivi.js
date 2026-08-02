@@ -266,43 +266,6 @@ const Suivi = (() => {
     return client;
   }
 
-  function traduireErreurAuth(error) {
-    if (error.message === 'Invalid login credentials') return 'Email ou mot de passe incorrect.';
-    return error.message;
-  }
-
-  /** Connecte l'agent avec email/mot de passe. Lève une erreur au message traduit en cas d'échec. */
-  async function connexion(email, motDePasse) {
-    const { data, error } = await initClient().auth.signInWithPassword({ email, password: motDePasse });
-    if (error) throw new Error(traduireErreurAuth(error));
-    return data.session;
-  }
-
-  async function deconnexion() {
-    await initClient().auth.signOut();
-  }
-
-  /** Retourne la session active, ou null si personne n'est connecté. */
-  async function sessionActuelle() {
-    const { data } = await initClient().auth.getSession();
-    return data.session;
-  }
-
-  /** Récupère le profil (nom, rôle) de l'agent actuellement connecté. */
-  async function profilConnecte() {
-    const sb = initClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return null;
-    const { data, error } = await sb.from('profils').select('*').eq('id', user.id).single();
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new Error('Votre compte existe mais aucun profil ne lui est associé. Contactez un administrateur.');
-      }
-      throw new Error(`Échec du chargement du profil : ${error.message}`);
-    }
-    return { id: data.id, nomComplet: data.nom_complet, role: data.role, statut: data.statut };
-  }
-
   /** Crée un dossier de suivi (et ses vols/étapes) à partir d'un projet Drones DCAD planifié. */
   async function creerDossierMission(params) {
     const { dossier, executions, etapes } = construireDossierDepuisProjet(params);
@@ -673,7 +636,7 @@ const Suivi = (() => {
     mapperMembreEquipeVersJs, mapperAutorisationVersJs, mapperIncidentVersJs, mapperAnomalieVersJs, mapperCorrectionVersJs, mapperPieceJointeVersJs, calculerIndicateursCharge,
     mapperChangementVersJs, filtrerChangements, calculerStatsChangements,
     calculerAvancementDossier, calculerStatsTableauDeBord,
-    connexion, deconnexion, sessionActuelle, profilConnecte, initClient,
+    initClient,
     creerDossierMission, listerDossiers, recupererDossier,
     mettreAJourExecutionVol, mettreAJourEtapeTraitement, enregistrerControleQualite, recupererTableauDeBord,
     listerMembresEquipe, ajouterMembreEquipe, retirerMembreEquipe, listerAgentsActifs,
