@@ -52,7 +52,7 @@ const Exporter = (() => {
       ['Zone'],
       ['Nom', p.zone.nom || 'Non renseigné'],
       ['Commune', p.zone.commune || 'Non renseignée'],
-      ['Description', p.zone.description || 'Non renseignée'],
+      ['Description', (p.zone.description || '').trim() || 'Non renseignée'],
       [],
       ['Paramètres drone'],
       ['Modèle', p.drone.modele],
