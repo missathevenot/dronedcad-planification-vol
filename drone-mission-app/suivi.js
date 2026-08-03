@@ -655,6 +655,61 @@ const Suivi = (() => {
     if (error) throw new Error(`Échec de la suppression du changement : ${error.message}`);
   }
 
+  /** Liste les objets cadastraux d'un dossier. */
+  async function listerObjetsCadastraux(missionSuiviId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('objets_cadastraux').select('*').eq('mission_suivi_id', missionSuiviId).order('date_creation', { ascending: false });
+    if (error) throw new Error(`Échec du chargement des objets cadastraux : ${error.message}`);
+    return data.map(mapperObjetCadastralVersJs);
+  }
+
+  /** Officialise un changement territorial en objet cadastral (parcelle ou bâtiment), avec sa première entrée d'historique. */
+  async function officialiserChangement(changementId, missionSuiviId, donnees) {
+    const sb = initClient();
+    const ligne = {
+      mission_suivi_id: missionSuiviId,
+      changement_id: changementId,
+      type: donnees.type,
+      reference: donnees.reference,
+      geometrie: donnees.geometrie,
+      description: donnees.description || ''
+    };
+    const { data, error } = await sb.from('objets_cadastraux').insert(ligne).select().single();
+    if (error) throw new Error(`Échec de l'officialisation : ${error.message}`);
+    const { error: erreurHistorique } = await sb.from('historique_objets_cadastraux').insert({
+      objet_cadastral_id: data.id,
+      description: 'Objet créé à partir du changement officialisé.',
+      nouveau_statut: 'en_attente'
+    });
+    if (erreurHistorique) {
+      const err = new Error(`Objet cadastral créé mais échec de l'historique : ${erreurHistorique.message}`);
+      err.objetCadastralId = data.id;
+      throw err;
+    }
+    return mapperObjetCadastralVersJs(data);
+  }
+
+  /** Liste l'historique d'un objet cadastral. */
+  async function listerHistoriqueObjetCadastral(objetCadastralId) {
+    const sb = initClient();
+    const { data, error } = await sb.from('historique_objets_cadastraux').select('*').eq('objet_cadastral_id', objetCadastralId).order('date_evenement', { ascending: false });
+    if (error) throw new Error(`Échec du chargement de l'historique : ${error.message}`);
+    return data.map(mapperHistoriqueCadastralVersJs);
+  }
+
+  /** Met à jour le statut d'un objet cadastral et ajoute une entrée à son historique. */
+  async function mettreAJourStatutObjetCadastral(id, nouveauStatut, description) {
+    const sb = initClient();
+    const { error: erreurMaj } = await sb.from('objets_cadastraux').update({ statut: nouveauStatut }).eq('id', id);
+    if (erreurMaj) throw new Error(`Échec de la mise à jour du statut : ${erreurMaj.message}`);
+    const { error: erreurHistorique } = await sb.from('historique_objets_cadastraux').insert({
+      objet_cadastral_id: id,
+      description,
+      nouveau_statut: nouveauStatut
+    });
+    if (erreurHistorique) throw new Error(`Statut mis à jour mais échec de l'historique : ${erreurHistorique.message}`);
+  }
+
   return {
     DEFAULTS,
     construireDossierDepuisProjet, mapperDossierVersJs, mapperExecutionVersJs,
@@ -672,7 +727,8 @@ const Suivi = (() => {
     uploaderPieceJointe, listerPiecesJointes, obtenirUrlSigneePieceJointe, supprimerPieceJointe,
     listerAnomaliesQualite, signalerAnomalieQualite, mettreAJourAnomalieQualite,
     listerCorrections, enregistrerCorrection,
-    listerChangements, enregistrerChangement, supprimerChangement
+    listerChangements, enregistrerChangement, supprimerChangement,
+    listerObjetsCadastraux, officialiserChangement, listerHistoriqueObjetCadastral, mettreAJourStatutObjetCadastral
   };
 })();
 
