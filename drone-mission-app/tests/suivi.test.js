@@ -327,3 +327,26 @@ test('calculerStatsChangements: tableau vide donne des stats à zéro', () => {
   assert.deepStrictEqual(stats.parType, {});
   assert.deepStrictEqual(stats.parPriorite, { faible: 0, moyenne: 0, haute: 0 });
 });
+
+test('mapperObjetCadastralVersJs: convertit une ligne objets_cadastraux', () => {
+  const js = Suivi.mapperObjetCadastralVersJs({
+    id: 'oc1', mission_suivi_id: 'm1', changement_id: 'ch1', type: 'parcelle',
+    reference: 'P-2026-014', geometrie: [[5.3, -4.0], [5.31, -4.0], [5.31, -4.01]],
+    description: 'Parcelle issue du changement', statut: 'en_attente', date_creation: '2026-08-03'
+  });
+  assert.strictEqual(js.type, 'parcelle');
+  assert.strictEqual(js.reference, 'P-2026-014');
+  assert.strictEqual(js.changementId, 'ch1');
+  assert.strictEqual(js.statut, 'en_attente');
+  assert.deepStrictEqual(js.geometrie, [[5.3, -4.0], [5.31, -4.0], [5.31, -4.01]]);
+});
+
+test('mapperHistoriqueCadastralVersJs: convertit une ligne historique_objets_cadastraux', () => {
+  const js = Suivi.mapperHistoriqueCadastralVersJs({
+    id: 'h1', objet_cadastral_id: 'oc1', date_evenement: '2026-08-03',
+    description: 'Objet créé à partir du changement officialisé.', nouveau_statut: 'en_attente'
+  });
+  assert.strictEqual(js.objetCadastralId, 'oc1');
+  assert.strictEqual(js.description, 'Objet créé à partir du changement officialisé.');
+  assert.strictEqual(js.nouveauStatut, 'en_attente');
+});

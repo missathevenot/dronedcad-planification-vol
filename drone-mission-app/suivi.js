@@ -251,6 +251,32 @@ const Suivi = (() => {
     return { total: changements.length, parType, parPriorite };
   }
 
+  /** Convertit une ligne Supabase (snake_case) `objets_cadastraux` en objet JS (camelCase). */
+  function mapperObjetCadastralVersJs(row) {
+    return {
+      id: row.id,
+      missionSuiviId: row.mission_suivi_id,
+      changementId: row.changement_id,
+      type: row.type,
+      reference: row.reference,
+      geometrie: row.geometrie,
+      description: row.description,
+      statut: row.statut,
+      dateCreation: row.date_creation
+    };
+  }
+
+  /** Convertit une ligne Supabase (snake_case) `historique_objets_cadastraux` en objet JS (camelCase). */
+  function mapperHistoriqueCadastralVersJs(row) {
+    return {
+      id: row.id,
+      objetCadastralId: row.objet_cadastral_id,
+      dateEvenement: row.date_evenement,
+      description: row.description,
+      nouveauStatut: row.nouveau_statut
+    };
+  }
+
   // ------------------------------------------------------------------
   // Fonctions impures (appels réseau Supabase, non testées automatiquement)
   // ------------------------------------------------------------------
@@ -635,6 +661,7 @@ const Suivi = (() => {
     mapperEtapeVersJs, mapperControleVersJs,
     mapperMembreEquipeVersJs, mapperAutorisationVersJs, mapperIncidentVersJs, mapperAnomalieVersJs, mapperCorrectionVersJs, mapperPieceJointeVersJs, calculerIndicateursCharge,
     mapperChangementVersJs, filtrerChangements, calculerStatsChangements,
+    mapperObjetCadastralVersJs, mapperHistoriqueCadastralVersJs,
     calculerAvancementDossier, calculerStatsTableauDeBord,
     initClient,
     creerDossierMission, listerDossiers, recupererDossier,
