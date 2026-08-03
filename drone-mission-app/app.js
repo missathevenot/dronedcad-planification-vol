@@ -1243,6 +1243,64 @@ const App = (() => {
     }
   }
 
+  async function chargerRegistreCadastre(dossierId) {
+    const hote = document.querySelector(`[data-cadastre-liste="${dossierId}"]`);
+    if (!hote) return;
+    try {
+      const objets = await Suivi.listerObjetsCadastraux(dossierId);
+      const historiques = await Promise.all(objets.map((o) => Suivi.listerHistoriqueObjetCadastral(o.id)));
+      hote.innerHTML = `
+        <h3>Objets cadastraux</h3>
+        ${objets.length === 0 ? '<p class="hint">Aucun objet cadastral pour ce dossier. Officialisez un changement depuis le sous-onglet Détection des changements.</p>' : objets.map((o, i) => `
+          <div class="suivi-tache-carte" data-objet-cadastral-id="${o.id}">
+            <div class="suivi-tache-carte__entete">
+              <b>${LIBELLES_TYPE_OBJET_CADASTRAL[o.type]} — ${Utils.escapeHtml(o.reference)}</b>
+              <span class="badge badge--${BADGE_STATUT_CADASTRAL[o.statut]}">${LIBELLES_STATUT_CADASTRAL[o.statut]}</span>
+            </div>
+            <p class="hint">${Utils.escapeHtml(o.description) || 'Aucune description.'} — ${o.dateCreation}</p>
+            <div class="field-row">
+              <div class="field"><label>Statut</label>
+                <select class="suivi-cadastre-statut">
+                  ${Object.keys(LIBELLES_STATUT_CADASTRAL).map((v) => `<option value="${v}" ${v === o.statut ? 'selected' : ''}>${LIBELLES_STATUT_CADASTRAL[v]}</option>`).join('')}
+                </select>
+              </div>
+              <div class="field"><label>Description</label><input type="text" class="suivi-cadastre-description" placeholder="Décrire la modification"></div>
+            </div>
+            <button class="btn btn--accent suivi-cadastre-enregistrer">Enregistrer</button>
+            <h4 class="mt">Historique</h4>
+            ${historiques[i].length === 0 ? '<p class="hint">Aucun événement enregistré.</p>' : historiques[i].map((h) => `
+              <p class="hint">${h.dateEvenement} — ${Utils.escapeHtml(h.description)}${h.nouveauStatut ? ` (${LIBELLES_STATUT_CADASTRAL[h.nouveauStatut]})` : ''}</p>
+            `).join('')}
+          </div>
+        `).join('')}
+      `;
+      hote.querySelectorAll('.suivi-cadastre-enregistrer').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const carte = btn.closest('[data-objet-cadastral-id]');
+          const id = carte.dataset.objetCadastralId;
+          const nouveauStatut = carte.querySelector('.suivi-cadastre-statut').value;
+          const description = carte.querySelector('.suivi-cadastre-description').value.trim();
+          if (!description) {
+            Utils.toast('Décrivez la modification avant d\'enregistrer.', 'warning');
+            return;
+          }
+          btn.disabled = true;
+          try {
+            await Suivi.mettreAJourStatutObjetCadastral(id, nouveauStatut, description);
+            Utils.toast('Objet cadastral mis à jour.', 'success');
+            await chargerRegistreCadastre(dossierId);
+          } catch (err) {
+            Utils.toast(`Échec de la mise à jour : ${err.message}`, 'danger');
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      hote.innerHTML = `<h3>Objets cadastraux</h3><p class="hint">Échec du chargement : ${Utils.escapeHtml(err.message)}</p>`;
+      Utils.toast(`Échec du chargement des objets cadastraux : ${err.message}`, 'danger');
+    }
+  }
+
   let changementGeometrieEnAttente = null;
   let changementsActuelsPourRapport = [];
   let changementsFiltresActuels = { type: '', priorite: '' };
@@ -1515,6 +1573,10 @@ const App = (() => {
     document.querySelectorAll('[data-changements-liste]').forEach((hote) => {
       const [dossierId, zoneId] = hote.dataset.changementsListe.split(':');
       chargerListeEtCarteChangements(dossierId, zoneId || null, hote);
+    });
+
+    document.querySelectorAll('[data-cadastre-liste]').forEach((hote) => {
+      chargerRegistreCadastre(hote.dataset.cadastreListe);
     });
 
     document.querySelectorAll('[data-etape-id]').forEach((carte) => {
