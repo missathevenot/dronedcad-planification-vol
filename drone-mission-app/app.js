@@ -1230,9 +1230,11 @@ const App = (() => {
 
   let changementGeometrieEnAttente = null;
   let changementsActuelsPourRapport = [];
+  let changementsFiltresActuels = { type: '', priorite: '' };
 
   async function chargerListeEtCarteChangements(dossierId, zoneId, hoteListe) {
     try {
+      changementsFiltresActuels = { type: '', priorite: '' };
       CartoChangements.initMap('changementsCarte');
       bindFormulaireChangements(dossierId, zoneId, hoteListe);
       await rafraichirChangements(dossierId, zoneId, hoteListe);
@@ -1324,8 +1326,9 @@ const App = (() => {
     }
   }
 
-  function renderListeChangements(hoteListe, changements, filtres = {}) {
+  function renderListeChangements(hoteListe, changements, filtres = changementsFiltresActuels) {
     const filtres_actuels = { type: filtres.type || '', priorite: filtres.priorite || '' };
+    changementsFiltresActuels = filtres_actuels;
     const visibles = Suivi.filtrerChangements(changements, filtres_actuels);
     hoteListe.innerHTML = `
       <h3>Changements enregistrés</h3>
