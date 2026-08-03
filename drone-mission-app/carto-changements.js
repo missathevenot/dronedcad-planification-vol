@@ -91,7 +91,7 @@ const CartoChangements = (() => {
       L.polygon(c.geometrie, {
         color: COULEURS_PRIORITE[c.priorite] || COULEURS_PRIORITE.moyenne,
         weight: 2, fillOpacity: 0.25
-      }).bindTooltip(`${c.type} — ${c.priorite}`).addTo(coucheChangements);
+      }).bindTooltip(`${Utils.escapeHtml(c.type)} — ${Utils.escapeHtml(c.priorite)}`).addTo(coucheChangements);
     });
   }
 

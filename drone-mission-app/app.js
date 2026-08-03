@@ -845,7 +845,7 @@ const App = (() => {
       hote.innerHTML = `
         <h4 class="mt">Registre des incidents</h4>
         ${incidents.length === 0 ? '<p class="hint">Aucun incident enregistré.</p>' : incidents.map((i) => `
-          <p class="hint">${i.dateIncident} — <b>${i.gravite}</b> — ${Utils.escapeHtml(i.description)}</p>
+          <p class="hint">${i.dateIncident} — <b>${Utils.escapeHtml(i.gravite)}</b> — ${Utils.escapeHtml(i.description)}</p>
         `).join('')}
         <div class="field-row">
           <div class="field"><label>Description</label><input type="text" class="suivi-incident-description" placeholder="Décrire l'incident"></div>
@@ -959,7 +959,7 @@ const App = (() => {
         ${anomalies.length === 0 ? '<p class="hint">Aucune anomalie signalée.</p>' : anomalies.map((a) => `
           <div class="suivi-anomalie" data-anomalie-id="${a.id}">
             <span>${a.dateSignalement} — ${Utils.escapeHtml(a.description)}</span>
-            <span class="badge badge--${a.statut === 'corrigee' ? 'success' : 'warning'}">${a.statut}</span>
+            <span class="badge badge--${a.statut === 'corrigee' ? 'success' : 'warning'}">${Utils.escapeHtml(a.statut)}</span>
             ${a.statut === 'ouverte' ? '<button class="btn btn--ghost suivi-anomalie-corriger">Marquer corrigée</button>' : ''}
           </div>
         `).join('')}
@@ -1175,7 +1175,7 @@ const App = (() => {
         ${autorisations.length === 0 ? '<p class="hint">Aucune autorisation enregistrée.</p>' : autorisations.map((a) => `
           <div class="suivi-tache-carte" data-autorisation-id="${a.id}">
             <div class="suivi-tache-carte__entete"><b>${Utils.escapeHtml(a.intitule)}</b>
-              <span class="badge badge--${a.statut === 'obtenue' ? 'success' : a.statut === 'refusee' ? 'danger' : 'muted'}">${a.statut}</span>
+              <span class="badge badge--${a.statut === 'obtenue' ? 'success' : a.statut === 'refusee' ? 'danger' : 'muted'}">${Utils.escapeHtml(a.statut)}</span>
             </div>
             <div class="field-row">
               <div class="field"><label>Statut</label>
