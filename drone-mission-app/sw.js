@@ -12,7 +12,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'drones-dcad-v10';
+const CACHE_VERSION = 'drones-dcad-v11';
 const APP_SHELL = [
   './',
   './index.html',
