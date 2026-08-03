@@ -1247,9 +1247,11 @@ const App = (() => {
   async function rafraichirChangements(dossierId, zoneId, hoteListe) {
     const changements = await Suivi.listerChangements(dossierId);
     changementsActuelsPourRapport = changements;
+    const objetsCadastraux = await Suivi.listerObjetsCadastraux(dossierId);
+    const changementsOfficialises = new Set(objetsCadastraux.map((o) => o.changementId));
     CartoChangements.afficherChangements(changements);
     CartoChangements.invalidateSize();
-    renderListeChangements(hoteListe, changements);
+    renderListeChangements(hoteListe, changements, changementsOfficialises);
     await chargerDossiersReferencePourChangements(zoneId, dossierId);
     return changements;
   }
@@ -1326,7 +1328,7 @@ const App = (() => {
     }
   }
 
-  function renderListeChangements(hoteListe, changements, filtres = changementsFiltresActuels) {
+  function renderListeChangements(hoteListe, changements, changementsOfficialises, filtres = changementsFiltresActuels) {
     const filtres_actuels = { type: filtres.type || '', priorite: filtres.priorite || '' };
     changementsFiltresActuels = filtres_actuels;
     const visibles = Suivi.filtrerChangements(changements, filtres_actuels);
@@ -1353,15 +1355,34 @@ const App = (() => {
             <span class="badge badge--${BADGE_PRIORITE_CHANGEMENT[c.priorite]}">${LIBELLES_PRIORITE_CHANGEMENT[c.priorite]}</span>
           </div>
           <p class="hint">${Utils.escapeHtml(c.description) || 'Aucune description.'} — ${c.dateDetection}</p>
-          <button class="btn btn--ghost suivi-changement-supprimer">Supprimer</button>
+          ${changementsOfficialises.has(c.id) ? '<p><span class="badge badge--muted">Déjà officialisé — non supprimable</span></p>' : `
+            <button class="btn btn--ghost suivi-changement-officialiser">Officialiser en objet cadastral</button>
+            <div class="suivi-officialisation-host is-hidden">
+              <div class="field-row">
+                <div class="field"><label>Type</label>
+                  <select class="suivi-officialisation-type">
+                    <option value="parcelle">Parcelle</option>
+                    <option value="batiment">Bâtiment</option>
+                  </select>
+                </div>
+                <div class="field"><label>Référence</label><input type="text" class="suivi-officialisation-reference" placeholder="Ex : P-2026-014"></div>
+              </div>
+              <div class="field"><label>Description</label><textarea class="suivi-officialisation-description" rows="2">${Utils.escapeHtml(c.description)}</textarea></div>
+              <div class="btn-row">
+                <button class="btn btn--accent suivi-officialisation-confirmer">Confirmer</button>
+                <button class="btn btn--ghost suivi-officialisation-annuler">Annuler</button>
+              </div>
+            </div>
+            <button class="btn btn--ghost suivi-changement-supprimer">Supprimer</button>
+          `}
         </div>
       `).join('')}
     `;
 
     const selectType = document.getElementById('changementsFiltreType');
     const selectPriorite = document.getElementById('changementsFiltrePriorite');
-    selectType.addEventListener('change', () => renderListeChangements(hoteListe, changements, { type: selectType.value, priorite: selectPriorite.value }));
-    selectPriorite.addEventListener('change', () => renderListeChangements(hoteListe, changements, { type: selectType.value, priorite: selectPriorite.value }));
+    selectType.addEventListener('change', () => renderListeChangements(hoteListe, changements, changementsOfficialises, { type: selectType.value, priorite: selectPriorite.value }));
+    selectPriorite.addEventListener('change', () => renderListeChangements(hoteListe, changements, changementsOfficialises, { type: selectType.value, priorite: selectPriorite.value }));
 
     hoteListe.querySelectorAll('.suivi-changement-supprimer').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -1376,6 +1397,49 @@ const App = (() => {
           await rafraichirChangements(dossierId, zoneId, hoteListe);
         } catch (err) {
           Utils.toast(`Échec de la suppression : ${err.message}`, 'danger');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    hoteListe.querySelectorAll('.suivi-changement-officialiser').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        btn.closest('.suivi-tache-carte').querySelector('.suivi-officialisation-host').classList.remove('is-hidden');
+      });
+    });
+
+    hoteListe.querySelectorAll('.suivi-officialisation-annuler').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        btn.closest('.suivi-officialisation-host').classList.add('is-hidden');
+      });
+    });
+
+    hoteListe.querySelectorAll('.suivi-officialisation-confirmer').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const carte = btn.closest('[data-changement-id]');
+        const changementId = carte.dataset.changementId;
+        const host = carte.querySelector('.suivi-officialisation-host');
+        const reference = host.querySelector('.suivi-officialisation-reference').value.trim();
+        if (!reference) {
+          Utils.toast('Indiquez une référence avant de confirmer.', 'warning');
+          return;
+        }
+        const changement = changements.find((c) => c.id === changementId);
+        btn.disabled = true;
+        try {
+          const dossierId = suiviDossierActuel.dossier.id;
+          const zoneId = suiviDossierActuel.dossier.zoneId;
+          await Suivi.officialiserChangement(changementId, dossierId, {
+            type: host.querySelector('.suivi-officialisation-type').value,
+            reference,
+            description: host.querySelector('.suivi-officialisation-description').value.trim(),
+            geometrie: changement.geometrie
+          });
+          Utils.toast('Objet cadastral créé.', 'success');
+          await rafraichirChangements(dossierId, zoneId, hoteListe);
+          await chargerRegistreCadastre(dossierId);
+        } catch (err) {
+          Utils.toast(`Échec de l'officialisation : ${err.message}`, 'danger');
           btn.disabled = false;
         }
       });
