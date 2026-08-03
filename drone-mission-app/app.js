@@ -756,6 +756,7 @@ const App = (() => {
         document.getElementById('suiviSousOngletTraitement').classList.toggle('is-hidden', cible !== 'traitement');
         document.getElementById('suiviSousOngletQualite').classList.toggle('is-hidden', cible !== 'qualite');
         document.getElementById('suiviSousOngletChangements').classList.toggle('is-hidden', cible !== 'changements');
+        document.getElementById('suiviSousOngletCadastre').classList.toggle('is-hidden', cible !== 'cadastre');
       });
     });
   }
@@ -794,6 +795,7 @@ const App = (() => {
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'traitement' ? ' is-active' : ''}" data-sous-onglet="traitement">Traitement</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'qualite' ? ' is-active' : ''}" data-sous-onglet="qualite">Contrôle qualité</button>
           <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'changements' ? ' is-active' : ''}" data-sous-onglet="changements">Détection des changements</button>
+          <button class="btn btn--ghost suivi-sous-onglet${suiviSousOngletActif === 'cadastre' ? ' is-active' : ''}" data-sous-onglet="cadastre">Mise à jour du cadastre</button>
         </div>
       </div>
 
@@ -802,6 +804,7 @@ const App = (() => {
       <div id="suiviSousOngletTraitement" class="suivi-sous-panel${suiviSousOngletActif === 'traitement' ? '' : ' is-hidden'}">${rendreCartesEtapes(etapes)}</div>
       <div id="suiviSousOngletQualite" class="suivi-sous-panel${suiviSousOngletActif === 'qualite' ? '' : ' is-hidden'}">${rendreCartesQualite(controles)}</div>
       <div id="suiviSousOngletChangements" class="suivi-sous-panel${suiviSousOngletActif === 'changements' ? '' : ' is-hidden'}">${rendreSousOngletChangements(dossier)}</div>
+      <div id="suiviSousOngletCadastre" class="suivi-sous-panel${suiviSousOngletActif === 'cadastre' ? '' : ' is-hidden'}">${rendreSousOngletCadastre(dossier)}</div>
     `;
 
     bindSousOngletsSuivi();
