@@ -740,6 +740,9 @@ const App = (() => {
   };
   const LIBELLES_PRIORITE_CHANGEMENT = { faible: 'Faible', moyenne: 'Moyenne', haute: 'Haute' };
   const BADGE_PRIORITE_CHANGEMENT = { faible: 'success', moyenne: 'warning', haute: 'danger' };
+  const LIBELLES_TYPE_OBJET_CADASTRAL = { parcelle: 'Parcelle', batiment: 'Bâtiment' };
+  const LIBELLES_STATUT_CADASTRAL = { en_attente: 'En attente', valide: 'Validé', rejete: 'Rejeté' };
+  const BADGE_STATUT_CADASTRAL = { en_attente: 'muted', valide: 'success', rejete: 'danger' };
 
   let suiviDossierActuel = null;
   let suiviSousOngletActif = 'planification';
@@ -1137,6 +1140,15 @@ const App = (() => {
 
       <div class="panel-box" data-changements-liste="${dossier.id}:${dossier.zoneId || ''}">
         <h3>Changements enregistrés</h3>
+        <p class="hint">Chargement…</p>
+      </div>
+    `;
+  }
+
+  function rendreSousOngletCadastre(dossier) {
+    return `
+      <div class="panel-box" data-cadastre-liste="${dossier.id}">
+        <h3>Objets cadastraux</h3>
         <p class="hint">Chargement…</p>
       </div>
     `;
